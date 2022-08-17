@@ -9,6 +9,8 @@ license = "Apache-2.0"
 readme = "README.md"
 
 description = "Convenient and simple macro for code synchronization in multithreading."
+keywords = ["easy_sync_code", "synchronized", "SafeManuallyDrop", "no_std", "clucompany"]
+categories = ["concurrency", "no-std"]
 
 # docs.rs-specific configuration
 [package.metadata.docs.rs]

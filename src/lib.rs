@@ -502,7 +502,6 @@ macro_rules! synchronized_point {
 	
 	{ 
 		// COMPILE_ERROR
-		
 		$($unk:tt)+
 	} => {
 		compile_error!(concat!(
