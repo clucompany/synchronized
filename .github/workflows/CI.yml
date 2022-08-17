@@ -38,3 +38,4 @@ jobs:
       run: cargo test --no-default-features --features std,get_point_name --lib --verbose
     - name: PL
       run: cargo test --no-default-features --features parking_lot,get_point_name --lib --verbose
+
