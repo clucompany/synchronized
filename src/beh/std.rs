@@ -1,14 +1,12 @@
 
 //! Synchronization primitive for the `synchronized` 
-//! macro implemented by the `parking_lot` library.
+//! macro implemented by the `std` library.
 
-extern crate parking_lot;
+extern crate std;
 
+use std::sync::MutexGuard;
 use crate::core::SyncPointBeh;
-pub use parking_lot::Mutex;
-pub use parking_lot::MutexGuard;
-pub use parking_lot::const_mutex;
-pub use parking_lot::Once;
+pub use std::sync::Mutex;
 
 impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	// !!! ATTENTION
@@ -20,17 +18,25 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	
 	#[inline(always)]
 	fn new_lock(&self) -> Self::LockType {
-		Mutex::lock(self)
+		match Mutex::lock(self) {
+			Ok(a) => a,
+			Err(e) => e.into_inner(),
+		}
 	}
 	
+	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
+	#[cfg( feature = "parking_lot" )]
 	#[inline(always)]
 	fn is_lock(&self) -> bool {
-		Mutex::is_locked(self)
+		true
 	}
 	
 	#[inline(always)]
 	fn try_lock(&self) -> Option<Self::LockType> {
-		Mutex::try_lock(self)
+		match Mutex::try_lock(self) {
+			Ok(a) => Some(a),
+			_ => None,
+		}
 	}
 	
 	#[inline(always)]
@@ -53,18 +59,17 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 /// Definition of the current implementation
 /// 
 #[doc(hidden)]
-#[cfg( all(not(feature = "std")) )]
 #[macro_export]
 macro_rules! __synchronized_beh {
 	// Definition of the current implementation
-	{ #name } => { "parking_lot" };
+	{ #name } => { "std" };
 	
 	// Defining a new synchronization point, usually implements static variables used during synchronization.
 	{ #new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident } => {
 		$crate::__make_name!( _HIDDEN_NAME -> stringify!($v_point_name) );
 		
 		#[allow(dead_code)]
-		static CONST_MUTEX: $crate::beh::pl::Mutex<$t> = $crate::beh::pl::const_mutex(
+		static CONST_MUTEX: $crate::beh::std::Mutex<$t> = $crate::beh::std::Mutex::new(
 			$t_make
 		);
 		
@@ -72,7 +77,7 @@ macro_rules! __synchronized_beh {
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			&'static $crate::beh::pl::Mutex<$t>, _HIDDEN_NAME
+			&'static $crate::beh::std::Mutex<$t>, _HIDDEN_NAME
 		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
 	};
 	// Creates a new lock on an already created sync point (#new_point)
@@ -85,4 +90,3 @@ macro_rules! __synchronized_beh {
 		$crate::core::SyncPoint::unlock(&$v_point_name, $lock);
 	};
 }
-
