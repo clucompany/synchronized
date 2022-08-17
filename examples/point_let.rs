@@ -24,7 +24,7 @@ fn main() {
 		let result0 = synchronized! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
-				POINT+= 1;
+				POINT += 1;
 				
 				POINT
 			}
@@ -51,7 +51,7 @@ fn main() {
 		let result2 = synchronized! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
-				POINT+= 1;
+				POINT += 1;
 				
 				POINT
 			}

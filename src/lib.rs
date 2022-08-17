@@ -190,7 +190,7 @@ fn main() {
 		let result0 = synchronized! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
-				POINT+= 1;
+				POINT += 1;
 				
 				POINT
 			}
@@ -208,7 +208,7 @@ fn main() {
 		let result1 = synchronized! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
-				POINT+= 1;
+				POINT += 1;
 				
 				POINT
 			}
@@ -306,7 +306,13 @@ pub mod beh {
 /// ```
 #[macro_export]
 macro_rules! synchronized {
-	{ ->$sync_point_name:ident ($v_point_name: ident) $($all:tt)* } => {{ // synchronized point
+	{
+		// Named `$sync_point_name` synchronized block with mutable value 
+		// of synchronized name `$v_point_name`, type `$ty` and value when 
+		// `$expr` is created.
+		// (Use only with `synchronized_point`.)
+		->$sync_point_name:ident ($v_point_name: ident) $($all:tt)*
+	} => {{ // synchronized point
 		$crate::__synchronized_beh!(#new_lock(__lock): $sync_point_name);
 		
 		let ref mut $v_point_name = *__lock;
@@ -320,30 +326,65 @@ macro_rules! synchronized {
 		result
 	}};
 	
-	{ $sync_point_name:ident ($v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)* } => {{ // synchronized point
+	{
+		// Named `$sync_point_name` synchronized block with mutable value 
+		// of synchronized name `$v_point_name`, type `$ty` and value when 
+		// `$expr` is created.
+		$sync_point_name:ident ($v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)*
+	} => {{ // synchronized point
 		$crate::__synchronized_beh!(#new_point<$ty: [$expr]>: $sync_point_name);
 		$crate::synchronized! {
 			->$sync_point_name ($v_point_name) $($all)*
 		}
 	}};
 	
-	{ (->$v_point_name: ident) $($all:tt)* } => {{ // sync point
+	{
+		// Named sync block named `$v_point_name`.
+		// (Use only with `synchronized_point`.)
+		(->$v_point_name: ident) $($all:tt)*
+	} => {{ // sync point
 		$crate::synchronized! {
 			->$v_point_name (__empty_value) $($all)*
 		}
 	}};
 	
-	{ ($v_point_name: ident) $($all:tt)* } => {{
+	{
+		// Named sync block named `$v_point_name`.
+		($v_point_name: ident) $($all:tt)*
+	} => {{
 		$crate::synchronized! {
 			$v_point_name (__empty_value: () = ()) $($all)*
 		}
 	}};
-	{ ( $v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)* } => {{ // sync value
+	{
+		// Anonymous synchronized block with mutable synchronized name value 
+		// `$v_point_name`, type `$ty` and value when `$expr` is created.
+		( $v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)*
+	} => {{ // sync value
 		$crate::synchronized! {
 			__PL_SYNC_POINT ($v_point_name: $ty = $expr) $($all)*
 		}
 	}};
-	{ $($all:tt)* } => {{ // nohead synchronized block
+	
+	{
+		// COMPILE_ERROR
+		$(->$_ident1:ident)? /* OR */ $($_ident2:ident)? ($($unk_in:tt)*) $($unk:tt)+
+	} => {
+		compile_error!(concat!(
+			"Error writing macro `synchronized`, incode: ",
+			$(stringify!(->$_ident1),)? 
+			$(stringify!($_ident2),)? 
+			
+			stringify!(($($unk_in)*)),
+			
+			stringify!($($unk)+),
+		));
+	};
+	
+	{
+		// Anonymous synchronized block
+		$($all:tt)*
+	} => {{ // nohead synchronized block
 		$crate::synchronized! {
 			__PL_SYNC_POINT (__empty_value: () = ()) $($all)*
 		}
@@ -368,7 +409,7 @@ macro_rules! synchronized {
 ///		let result0 = synchronized! ((->COMB_SYNC) {
 ///			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 ///			unsafe {
-///				POINT+= 1;
+///				POINT += 1;
 ///				
 ///				POINT
 ///			}
@@ -381,7 +422,7 @@ macro_rules! synchronized {
 ///		let result1 = synchronized! ((->COMB_SYNC) {
 ///			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 ///			unsafe {
-///				POINT+= 1;
+///				POINT += 1;
 ///			
 ///				POINT
 ///			}
@@ -401,7 +442,7 @@ macro_rules! synchronized {
 ///		let result0 = synchronized! ((->COMB_SYNC) {
 ///			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 ///			unsafe {
-///				POINT+= 1;
+///				POINT += 1;
 ///				
 ///				POINT
 ///			}
@@ -423,7 +464,7 @@ macro_rules! synchronized {
 ///		let result2 = synchronized! ((->COMB_SYNC) {
 ///			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 ///			unsafe {
-///				POINT+= 1;
+///				POINT += 1;
 ///			
 ///				POINT
 ///			}
@@ -431,7 +472,13 @@ macro_rules! synchronized {
 ///	}}
 #[macro_export]
 macro_rules! synchronized_point {
-	{ $sync_point_name:ident ($ty: ty = $expr:expr ) {$($all:tt)*} $(; $($unk:tt)*)? } => {
+	{
+		// Named sync point named `$sync_point_name`.
+		//
+		// With a mutable synchronized variable of type `$ty` 
+		// with a default value of `$expr`.
+		$sync_point_name:ident ($ty: ty = $expr:expr ) {$($all:tt)*} $(; $($unk:tt)*)?
+	} => {
 		{
 			$crate::__synchronized_beh!(#new_point<$ty: [$expr]>: $sync_point_name);
 			
@@ -442,7 +489,10 @@ macro_rules! synchronized_point {
 			$($unk)*
 		})?
 	};
-	{ ($sync_point_name:ident) {$($all:tt)*} $(; $($unk:tt)*)? } => {
+	{ 	
+		// Named sync point named `$sync_point_name`
+		($sync_point_name:ident) {$($all:tt)*} $(; $($unk:tt)*)? 
+	} => {
 		$crate::synchronized_point! {
 			$sync_point_name (() = ()) { $($all)* }
 			
@@ -450,10 +500,35 @@ macro_rules! synchronized_point {
 		}
 	};
 	
+	{ 
+		// COMPILE_ERROR
+		
+		$($unk:tt)+
+	} => {
+		compile_error!(concat!(
+			"Error writing macro `synchronized_point`, incode: ",
+			stringify!($($unk)+),
+		));
+	};
+	
 	[] => {}
 }
 
 /// Describes the selected default lock for the `synchronized` macro. Currently it is `
-#[doc = crate::__synchronized_beh!{ #name }]
+#[doc = crate::__synchronized_beh!( #name )]
 /// ` by default.
-pub const CURRENT_DEF_BEH: &'static str = crate::__synchronized_beh!{ #name };
+pub const CURRENT_DEF_BEH: &'static str = crate::__synchronized_beh!( #name );
+
+/// Whether `get_point_name` was enabled in this build.
+/// 
+/// The `get_point_name` feature determines whether the connection 
+/// label name can be determined at run time.
+pub const IS_GET_POINT_NAME_SUPPORT: bool = {
+	#[cfg( not(feature = "get_point_name") )] {
+		false
+	}
+	
+	#[cfg( feature = "get_point_name" )] {
+		true
+	}
+};

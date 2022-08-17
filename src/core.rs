@@ -57,7 +57,7 @@ pub struct SyncPoint<T, N> {
 	mutex_builder: T,
 	
 	/// The phantom used to implement `SyncPointName`.
-	_pp2: PhantomData<N>,
+	phantom_name: PhantomData<N>,
 }
 
 impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
@@ -67,7 +67,7 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 		Self {
 			mutex_builder,
 			
-			_pp2: PhantomData,
+			phantom_name: PhantomData,
 		}
 	}
 	
@@ -102,21 +102,38 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 
 #[cfg_attr(docsrs, doc(cfg(feature = "get_point_name")))]
 #[cfg( feature = "get_point_name" )]
-impl<T, N> SyncPoint<T, N> where T: SyncPointBeh, N: SyncPointName {
+impl<T, N> SyncPoint<T, N> where N: SyncPointName {
 	/// Getting the sync point name
-	#[cfg_attr(docsrs, doc(cfg(feature = "get_point_name")))]
-	#[cfg( feature = "get_point_name" )]
 	#[inline(always)]
 	pub const fn get_sync_point_name(&self) -> &'static str {
 		N::NAME
 	}
 	
 	/// Getting the sync point name
-	#[cfg_attr(docsrs, doc(cfg(feature = "get_point_name")))]
-	#[cfg( feature = "get_point_name" )]
 	#[inline(always)]
 	pub const fn get_name() -> &'static str {
 		N::NAME
+	}
+}
+
+#[cfg( not(feature = "get_point_name") )]
+impl<T, N> SyncPoint<T, N> {
+	/// Getting the sync point name
+	/// 
+	/// Warning since `get_point_name` is disabled, 
+	/// "<unknown>" will always be returned.
+	#[inline(always)]
+	pub const fn get_sync_point_name(&self) -> &'static str {
+		"<unknown>"
+	}
+	
+	/// Getting the sync point name
+	/// 
+	/// Warning since `get_point_name` is disabled, 
+	/// "<empty>" will always be returned.
+	#[inline(always)]
+	pub const fn get_name() -> &'static str {
+		"<unknown>"
 	}
 }
 
@@ -126,7 +143,7 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh, N: SyncPointName {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __make_name {
-	[ $name:ident -> $expr:expr $(; $($unk:tt)*)? ] => {
+	[ #new_name<$name:ident>: $expr:expr $(; $($unk:tt)*)? ] => {
 		/// An automatically generated enum for 
 		/// the type-based implementation of SyncPointName.
 		pub enum $name {}
@@ -142,6 +159,8 @@ macro_rules! __make_name {
 		)?
 	};
 	
+	[ #get_name<$name:ident> ] => { $name };
+	
 	[] => {}
 }
 
@@ -151,11 +170,15 @@ macro_rules! __make_name {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __make_name {
-	[ $name:ident -> $expr:expr $(; $($unk:tt)*)? ] => {
-		/// An automatically generated enum for 
-		/// the type-based implementation of SyncPointName.
-		/// (Just a stub.)
-		pub enum $name {}
+	// The `get_point_name` function is disabled, 
+	// only a stub is used.
+	[ #new_name<$name:ident>: $expr:expr $(; $($unk:tt)*)? ] => {};
+	
+	// The `get_point_name` function is disabled, 
+	// only a stub is used.
+	[ #get_name<$name:ident> ] => {
+		()
 	};
+	
 	[] => {}
 }

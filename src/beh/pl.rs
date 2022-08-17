@@ -61,7 +61,7 @@ macro_rules! __synchronized_beh {
 	
 	// Defining a new synchronization point, usually implements static variables used during synchronization.
 	{ #new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident } => {
-		$crate::__make_name!( _HIDDEN_NAME -> stringify!($v_point_name) );
+		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
 		
 		#[allow(dead_code)]
 		static CONST_MUTEX: $crate::beh::pl::Mutex<$t> = $crate::beh::pl::const_mutex(
@@ -72,7 +72,8 @@ macro_rules! __synchronized_beh {
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			&'static $crate::beh::pl::Mutex<$t>, _HIDDEN_NAME
+			&'static $crate::beh::pl::Mutex<$t>,
+			$crate::__make_name!(#get_name<_HIDDEN_NAME>)
 		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
 	};
 	// Creates a new lock on an already created sync point (#new_point)
