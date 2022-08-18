@@ -1,6 +1,6 @@
 [package]
 name = "synchronized"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 repository = "https://github.com/clucompany/synchronized.git"
 edition = "2021"
@@ -29,6 +29,6 @@ get_point_name = []
 std = []
 
 [dependencies]
-# Choose between `std` or `parking_lot` as the default synchronization primitive.
-parking_lot = {version = "0.12.1", optional = true}
-
+# Choose between `std` or `parking_lot` as 
+# the default synchronization primitive.
+parking_lot =	{ version = "0.12.1", optional = true }

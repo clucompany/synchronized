@@ -1,14 +1,17 @@
 
-//! The core of the library that defines the basic primitives. 
+//! The core of the library that defines the basic primitives.
 
-use core::ops::DerefMut;
-use core::ops::Deref;
 use core::marker::PhantomData;
+
+use core::ops::Deref;
+use core::ops::DerefMut;
 
 /// Implementation of the behavior for the used synchronization structure.
 pub trait SyncPointBeh {
-	/// The actual structure that holds the synchronization and provides access to the data.
+	/// The actual structure that holds the synchronization 
+	/// and provides access to the data.
 	type LockType: Deref<Target = Self::DerefLockType> + DerefMut;
+	
 	/// The data type to modify, provided by the synchronization structure.
 	type DerefLockType;
 	
@@ -22,6 +25,8 @@ pub trait SyncPointBeh {
 	
 	/// If the lock exists and is not released, then return None, 
 	/// if there is no lock, then create it and return Some.
+	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
+	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
 	fn try_lock(&self) -> Option<Self::LockType>;
 	
 	/// Destroy the blocking structure and remove 
@@ -95,6 +100,8 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 	/// If the lock exists and is not released, then return None, 
 	/// if there is no lock, then create it and return Some.
 	#[inline(always)]
+	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
+	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
 	pub fn try_lock(&self) -> Option<T::LockType> {
 		T::try_lock(&self.mutex_builder)
 	}
@@ -103,13 +110,13 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 #[cfg_attr(docsrs, doc(cfg(feature = "get_point_name")))]
 #[cfg( feature = "get_point_name" )]
 impl<T, N> SyncPoint<T, N> where N: SyncPointName {
-	/// Getting the sync point name
+	/// Getting the sync point name.
 	#[inline(always)]
 	pub const fn get_sync_point_name(&self) -> &'static str {
 		N::NAME
 	}
 	
-	/// Getting the sync point name
+	/// Getting the sync point name.
 	#[inline(always)]
 	pub const fn get_name() -> &'static str {
 		N::NAME
@@ -130,7 +137,7 @@ impl<T, N> SyncPoint<T, N> {
 	/// Getting the sync point name
 	/// 
 	/// Warning since `get_point_name` is disabled, 
-	/// "<empty>" will always be returned.
+	/// "<unknown>" will always be returned.
 	#[inline(always)]
 	pub const fn get_name() -> &'static str {
 		"<unknown>"
@@ -170,13 +177,17 @@ macro_rules! __make_name {
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __make_name {
-	// The `get_point_name` function is disabled, 
-	// only a stub is used.
-	[ #new_name<$name:ident>: $expr:expr $(; $($unk:tt)*)? ] => {};
+	[
+		// The `get_point_name` function is disabled, 
+		// only a stub is used.
+		#new_name<$name:ident>: $expr:expr $(; $($unk:tt)*)?
+	] => {};
 	
-	// The `get_point_name` function is disabled, 
-	// only a stub is used.
-	[ #get_name<$name:ident> ] => {
+	[
+		// The `get_point_name` function is disabled, 
+		// only a stub is used.
+		#get_name<$name:ident>
+	] => {
 		()
 	};
 	

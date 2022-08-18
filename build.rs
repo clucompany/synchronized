@@ -3,7 +3,14 @@
 //! `features` were not installed correctly.
 
 #[cfg( 
-	all(not(test), not(docsrs), not(feature = "doc_cfg"), feature = "parking_lot", feature = "std")
+	all(
+		not(test), 
+		not(docsrs),
+		
+		not(feature = "doc_cfg"),
+		feature = "parking_lot",
+		feature = "std",
+	)
 )]
 fn main() {
 	/// CargoWarningPrintln
@@ -22,7 +29,14 @@ fn main() {
 	cwarning!("synchronized: The choice of synchronization between `std` and `parking_lot` was expected by default for `synchronized` macro. It is not possible to use both synchronization methods at the same time, `std` is now used.");
 }
 
-#[cfg(not(
-	all(not(test), not(docsrs), not(feature = "doc_cfg"), feature = "parking_lot", feature = "std")
-))]
+#[cfg( 
+	not(all(
+		not(test), 
+		not(docsrs),
+		
+		not(feature = "doc_cfg"),
+		feature = "parking_lot",
+		feature = "std",
+	))
+)]
 fn main() {}

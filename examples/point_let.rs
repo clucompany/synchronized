@@ -10,9 +10,9 @@ use synchronized::synchronized;
 fn main() {
 	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
 	//
-	// Note that the sync point has a mutable String variable with a default value 
-	// of String::new(). To make this variable mutable, you will need to call the sync macro.
-	synchronized_point! {COMB_SYNC (String = String::new()) {
+	// Note that the sync point has a mutable `String` and `usize` variable with a default value 
+	// of `String::new()` and `0`. To make this variable mutable, you will need to call the sync macro.
+	synchronized_point! {COMB_SYNC (String = String::new(), usize = 0) {
 		static mut POINT: usize = 0;
 		println!("GeneralSyncPoint, name_point: {}", COMB_SYNC.get_sync_point_name());
 		
@@ -33,10 +33,13 @@ fn main() {
 		// #1 This line of code is not synchronized and can run concurrently on all threads.
 		println!("Unsynchronized code 1");
 		
-		// Synchronized code by `COMB_SYNC` label with `sync_let: String` mutable variable
-		let result1 = synchronized!(->COMB_SYNC(sync_let) {
+		// Synchronized code by `COMB_SYNC` label with `sync_let: String` and `count: usize` mutable variable
+		let result1 = synchronized!(->COMB_SYNC(sync_let, count) {
 			// sync_let <-- String (COMB_SYNC)
 			*sync_let = "test".to_string();
+			*count += 1;
+			
+			*count
 		});
 		
 		// #2 This line of code is not synchronized and can run concurrently on all threads.

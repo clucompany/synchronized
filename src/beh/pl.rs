@@ -8,7 +8,6 @@ use crate::core::SyncPointBeh;
 pub use parking_lot::Mutex;
 pub use parking_lot::MutexGuard;
 pub use parking_lot::const_mutex;
-pub use parking_lot::Once;
 
 impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	// !!! ATTENTION
@@ -24,11 +23,15 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	}
 	
 	#[inline(always)]
+	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
+	#[cfg( feature = "parking_lot" )]
 	fn is_lock(&self) -> bool {
 		Mutex::is_locked(self)
 	}
 	
 	#[inline(always)]
+	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
+	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
 	fn try_lock(&self) -> Option<Self::LockType> {
 		Mutex::try_lock(self)
 	}
@@ -56,11 +59,16 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 #[cfg( all(not(feature = "std")) )]
 #[macro_export]
 macro_rules! __synchronized_beh {
-	// Definition of the current implementation
-	{ #name } => { "parking_lot" };
-	
-	// Defining a new synchronization point, usually implements static variables used during synchronization.
-	{ #new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident } => {
+	{
+		// Definition of the current implementation
+		#name
+	} => { "parking_lot" };
+
+	{
+		// Defining a new synchronization point, usually implements static 
+		// variables used during synchronization.
+		#new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident
+	} => {
 		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
 		
 		#[allow(dead_code)]
@@ -76,13 +84,17 @@ macro_rules! __synchronized_beh {
 			$crate::__make_name!(#get_name<_HIDDEN_NAME>)
 		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
 	};
-	// Creates a new lock on an already created sync point (#new_point)
-	{ #new_lock($lock:ident): $v_point_name:ident } => {
+	{
+		// Creates a new lock on an already created sync point (#new_point)
+		#new_lock($lock:ident): $v_point_name:ident
+	} => {
 		#[allow(unused_mut)]
 		let mut $lock = $v_point_name.new_lock();
 	};
-	// Deletes a newly created lock (#new_lock)
-	{ #drop_lock($lock: ident): $v_point_name:ident } => {
+	{
+		// Deletes a newly created lock (#new_lock)
+		#drop_lock($lock: ident): $v_point_name:ident
+	} => {
 		$crate::core::SyncPoint::unlock(&$v_point_name, $lock);
 	};
 }

@@ -17,20 +17,25 @@ fn main() {
 	// Creation of 5 threads to implement a multi-threaded environment.
 	for thread_id in 0..5 {
 		let join = spawn(move || {
-			// Create anonymous synchronized code with one mutable variable `sync_let`.
-			let result = synchronized!((sync_let: String = String::new()) {
-				// If it's the first thread, 
-				// then theoretically `sync_let` is String::new().
-				if thread_id == 0 {
-					assert_eq!(sync_let.is_empty(), true);
+			// Create anonymous synchronized code with one mutable variable `sync_let` and `count`.
+			let result = synchronized!(
+				(sync_let: String = String::new(), count: usize = 0) {
+					// If it's the first thread, 
+					// then theoretically `sync_let` is String::new().
+					if thread_id == 0 {
+						assert_eq!(sync_let.is_empty(), true);
+						assert_eq!(count, &0);
+					}
+					
+					// We fill the variable `sync_let` and `count` with data.
+					sync_let.push_str(&thread_id.to_string());
+					sync_let.push_str(" ");
+					
+					*count += 1;
+					
+					sync_let.clone()
 				}
-				
-				// We fill the variable `sync_let` with data.
-				sync_let.push_str(&thread_id.to_string());
-				sync_let.push_str(" ");
-				
-				sync_let.clone()
-			});
+			);
 			
 			// Outputting debug information.
 			println!("#[id: {}] {}", thread_id, result);

@@ -123,20 +123,25 @@ fn main() {
 	// Creation of 5 threads to implement a multi-threaded environment.
 	for thread_id in 0..5 {
 		let join = spawn(move || {
-			// Create anonymous synchronized code with one mutable variable `sync_let`.
-			let result = synchronized!((sync_let: String = String::new()) {
-				// If it's the first thread, 
-				// then theoretically `sync_let` is String::new().
-				if thread_id == 0 {
-					assert_eq!(sync_let.is_empty(), true);
+			// Create anonymous synchronized code with one mutable variable `sync_let` and `count`.
+			let result = synchronized!(
+				(sync_let: String = String::new(), count: usize = 0) {
+					// If it's the first thread, 
+					// then theoretically `sync_let` is String::new().
+					if thread_id == 0 {
+						assert_eq!(sync_let.is_empty(), true);
+						assert_eq!(count, &0);
+					}
+					
+					// We fill the variable `sync_let` and `count` with data.
+					sync_let.push_str(&thread_id.to_string());
+					sync_let.push_str(" ");
+					
+					*count += 1;
+					
+					sync_let.clone()
 				}
-				
-				// We fill the variable `sync_let` with data.
-				sync_let.push_str(&thread_id.to_string());
-				sync_let.push_str(" ");
-				
-				sync_let.clone()
-			});
+			);
 			
 			// Outputting debug information.
 			println!("#[id: {}] {}", thread_id, result);
@@ -224,7 +229,10 @@ fn main() {
 
 This section only describes how to choose the default synchronization method for a `synchronized` macro.
 
-### 1. PlugAndPlay (Minimal, Std)
+### 1. PlugAndPlay (minimal, std)
+
+For a `synchronized` macro, use the primitives implemented by the default `std` library.
+
 ```rust,ignore
 [dependencies.synchronized]
 version = "1.0.0"
@@ -235,7 +243,10 @@ features = [
 ]
 ```
 
-### 2. PlugAndPlay (Minimal, parking_lot)
+### 2. PlugAndPlay (minimal, parking_lot)
+
+For a `synchronized` macro, use the primitives implemented by the default `parking_lot` library.
+
 ```rust,ignore
 [dependencies.synchronized]
 version = "1.0.0"
@@ -270,7 +281,12 @@ pub mod beh {
 	pub mod std;
 	
 	// If locking is not selected, then select `std` by default.
-	#[cfg( all(not(feature = "parking_lot"), not(feature = "std")) )]
+	#[cfg(
+		all(
+			not(feature = "parking_lot"),
+			not(feature = "std"),
+		) 
+	)]
 	pub mod std;
 }
 
@@ -293,14 +309,15 @@ pub mod beh {
 /// };
 /// ```
 /// 
-/// ### 2. Create anonymous synchronized code with one variable to change `sync_let`.
+/// ### 2. Create anonymous synchronized code with one variable to change `sync_let` and `count`.
 /// ```rust
 ///	use synchronized::synchronized;
 ///	
-///	let result = synchronized!((sync_let: String = String::new()) {
+///	let result = synchronized!((sync_let: String = String::new(), count: usize = 0) {
 ///		// We fill the variable `sync_let` with data.
 ///		sync_let.push_str("1 ");
 ///	
+///		*count += 1;
 ///		sync_let.clone()
 ///	});
 /// ```
@@ -311,15 +328,17 @@ macro_rules! synchronized {
 		// of synchronized name `$v_point_name`, type `$ty` and value when 
 		// `$expr` is created.
 		// (Use only with `synchronized_point`.)
-		->$sync_point_name:ident ($v_point_name: ident) $($all:tt)*
+		->$sync_point_name:ident ( $($v_point_name: ident),* $(,)? ) $($all:tt)*
 	} => {{ // synchronized point
 		$crate::__synchronized_beh!(#new_lock(__lock): $sync_point_name);
 		
-		let ref mut $v_point_name = *__lock;
+		let ( $(ref mut $v_point_name),* ) = *__lock;
 		let result = {
 			$($all)*
 		};
-		drop($v_point_name);
+		$(
+			drop($v_point_name);
+		)*
 		
 		$crate::__synchronized_beh!(#drop_lock(__lock): $sync_point_name);
 		
@@ -330,11 +349,23 @@ macro_rules! synchronized {
 		// Named `$sync_point_name` synchronized block with mutable value 
 		// of synchronized name `$v_point_name`, type `$ty` and value when 
 		// `$expr` is created.
-		$sync_point_name:ident ($v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)*
-	} => {{ // synchronized point
+		$sync_point_name:ident ( $v_point_name: ident: $ty: ty = $expr:expr $(,)? ) $($all:tt)*
+	} => {{
 		$crate::__synchronized_beh!(#new_point<$ty: [$expr]>: $sync_point_name);
 		$crate::synchronized! {
 			->$sync_point_name ($v_point_name) $($all)*
+		}
+	}};
+	
+	{
+		// Named sync block $sync_point_name with mutable values written 
+		// comma-separated sync name $v_point_name, type $ty and value when 
+		// $expr was created.
+		$sync_point_name:ident ( $($v_point_name: ident: $ty: ty = $expr:expr),* $(,)? ) $($all:tt)*
+	} => {{
+		$crate::__synchronized_beh!(#new_point<($($ty),*): [($($expr),*)]>: $sync_point_name);
+		$crate::synchronized! {
+			->$sync_point_name ( $($v_point_name),* ) $($all)*
 		}
 	}};
 	
@@ -359,10 +390,10 @@ macro_rules! synchronized {
 	{
 		// Anonymous synchronized block with mutable synchronized name value 
 		// `$v_point_name`, type `$ty` and value when `$expr` is created.
-		( $v_point_name: ident: $ty: ty = $expr:expr ) $($all:tt)*
+		( $($v_point_name: ident: $ty: ty = $expr:expr),* $(,)? ) $($all:tt)*
 	} => {{ // sync value
 		$crate::synchronized! {
-			__PL_SYNC_POINT ($v_point_name: $ty = $expr) $($all)*
+			__ANONYMOUS_SYNC_POINT ( $($v_point_name: $ty = $expr),* ) $($all)*
 		}
 	}};
 	
@@ -386,7 +417,7 @@ macro_rules! synchronized {
 		$($all:tt)*
 	} => {{ // nohead synchronized block
 		$crate::synchronized! {
-			__PL_SYNC_POINT (__empty_value: () = ()) $($all)*
+			(__empty_value: () = ()) $($all)*
 		}
 	}};
 	
@@ -477,10 +508,27 @@ macro_rules! synchronized_point {
 		//
 		// With a mutable synchronized variable of type `$ty` 
 		// with a default value of `$expr`.
-		$sync_point_name:ident ($ty: ty = $expr:expr ) {$($all:tt)*} $(; $($unk:tt)*)?
+		$sync_point_name:ident ( $ty: ty = $expr:expr $(,)? ) {$($all:tt)*} $(; $($unk:tt)*)?
 	} => {
 		{
 			$crate::__synchronized_beh!(#new_point<$ty: [$expr]>: $sync_point_name);
+			
+			$($all)*
+		}
+		
+		$($crate::synchronized_point! {
+			$($unk)*
+		})?
+	};
+	{
+		// Named sync point named `$sync_point_name`.
+		//
+		// With mutable synchronized comma-separated variables of type `$ty`
+		// with a default value of `$expr`.
+		$sync_point_name:ident ( $($ty: ty = $expr:expr),* $(,)? ) {$($all:tt)*} $(; $($unk:tt)*)?
+	} => {
+		{
+			$crate::__synchronized_beh!(#new_point<($($ty),*): [($($expr),*)]>: $sync_point_name);
 			
 			$($all)*
 		}
