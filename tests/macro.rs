@@ -1,6 +1,7 @@
 
 use synchronized::synchronized;
-#[cfg( all( feature = "parking_lot", not( feature = "std" ) ) )]
+
+#[cfg( all( feature = "point", feature = "parking_lot", not( feature = "std" ) ) )]
 use synchronized::synchronized_point;
 
 #[cfg(test)]
@@ -31,7 +32,7 @@ fn test_synchronized() {
 }
 
 #[cfg(test)]
-#[cfg( all( feature = "parking_lot", not( feature = "std" ) ) )]
+#[cfg( all( feature = "point", feature = "parking_lot", not( feature = "std" ) ) )]
 #[test]
 fn test_synchronized_point() {
 	synchronized_point! ((NAME_SYNC_POINT) {

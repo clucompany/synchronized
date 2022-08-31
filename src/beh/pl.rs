@@ -81,7 +81,7 @@ macro_rules! __synchronized_beh {
 		#[allow(non_upper_case_globals)]
 		pub static $v_point_name: $crate::core::SyncPoint<
 			&'static $crate::beh::pl::Mutex<$t>,
-			$crate::__make_name!(#get_name<_HIDDEN_NAME>)
+			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
 		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
 	};
 	{

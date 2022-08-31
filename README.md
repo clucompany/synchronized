@@ -222,10 +222,11 @@ For a `synchronized` macro, use the primitives implemented by the default `std` 
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.1"
+version = "1.0.2"
 default-features = false
 features = [
 	"std",
+	#"point",
 	#"get_point_name"
 ]
 ```
@@ -236,10 +237,11 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.1"
+version = "1.0.2"
 default-features = false
 features = [
 	"parking_lot",
+	#"point",
 	#"get_point_name"
 ]
 ```

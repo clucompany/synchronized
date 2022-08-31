@@ -35,7 +35,6 @@ jobs:
     - name: Run cargo alltest
       run: cargo test --all-features --verbose
     - name: Std
-      run: cargo test --no-default-features --features std,get_point_name --lib --verbose
+      run: cargo test --no-default-features --features std,point,get_point_name --lib --verbose
     - name: PL
-      run: cargo test --no-default-features --features parking_lot,get_point_name --lib --verbose
-
+      run: cargo test --no-default-features --features parking_lot,point,get_point_name --lib --verbose
