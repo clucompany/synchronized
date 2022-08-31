@@ -1,11 +1,23 @@
 
+#[cfg( feature = "point" )]
 use synchronized::synchronized_point;
+#[cfg( feature = "point" )]
 use synchronized::synchronized;
+
 
 /*
 	An example of the implementation of synchronized code with one non-anonymous (named) 
 	synchronization point with one mutable variable.
+	
+	!!! In this example, the assembly requires the `point` feature to be active.
 */
+
+#[cfg( not(feature = "point") )]
+macro_rules! synchronized_point {
+	[ $($unk:tt)* ] => {
+		println!("!!! This example requires support for the `point` feature. Run the example with `cargo run --example point_let --all-features`.");
+	};
+}
 
 fn main() {
 	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
