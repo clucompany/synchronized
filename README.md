@@ -257,7 +257,7 @@ features = [
 ]
 ```
 
-### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_-_trait)
+### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_trait)
 
 For a `synchronized` macro, use the primitives implemented by the default `tokio` library.
 
