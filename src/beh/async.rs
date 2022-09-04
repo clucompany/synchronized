@@ -7,16 +7,19 @@ extern crate tokio;
 pub use tokio::sync::Mutex;
 pub use tokio::sync::MutexGuard;
 use crate::core::SyncPointBeh;
-use crate::cfg_not_async;
-use crate::cfg_async;
+use crate::cfg_not_only_async;
+use crate::cfg_only_async;
 
-cfg_async! {
+cfg_only_async! {
+	/// A macro that determines whether to add asynchronous fn support for traits.
 	macro_rules! async_or_sync_impltraitcode {
 		[
 			$(#[$($addmeta:tt)*])*
-			impl[$($left:tt)*] $name_trait: ident for $impl_ty: ty {
-				#async	{ $($async_code:tt)* }
-				#sync	{ $($sync_code:tt)* }
+			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
+				$(#[$doc_hide0:meta])* // doc hidden
+				#only_async	{ $($async_code:tt)* }
+				$(#[$doc_hide1:meta])* // doc hidden
+				#only_sync	{ $($sync_code:tt)* }
 				
 				$($code:tt)+
 			}
@@ -27,7 +30,7 @@ cfg_async! {
 			
 			$(#[$($addmeta)*])*
 			#[async_trait]
-			impl<$($left)*> $name_trait for $impl_ty {
+			impl $(<$($left)*>)? $name_trait for $impl_ty {
 				$($async_code)*
 				
 				$($code)+
@@ -35,19 +38,22 @@ cfg_async! {
 		};
 	}
 }
-cfg_not_async! {
+cfg_not_only_async! {
+	/// A macro that determines whether to add asynchronous fn support for traits.
 	macro_rules! async_or_sync_impltraitcode {
 		[
 			$(#[$($addmeta:tt)*])*
-			impl[$($left:tt)*] $name_trait: ident for $impl_ty: ty {
-				#async	{ $($async_code:tt)* }
-				#sync	{ $($sync_code:tt)* }
+			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
+				$(#[$doc_hide0:meta])* // doc hidden
+				#only_async	{ $($async_code:tt)* }
+				$(#[$doc_hide1:meta])* // doc hidden
+				#only_sync	{ $($sync_code:tt)* }
 				
 				$($code:tt)+
 			}
 		] => {
 			$(#[$($addmeta)*])*
-			impl<$($left)*> $name_trait for $impl_ty {
+			impl $(<$($left)*>)? $name_trait for $impl_ty {
 				$($sync_code)*
 				
 				$($code)+
@@ -58,7 +64,9 @@ cfg_not_async! {
 
 async_or_sync_impltraitcode! {
 	impl['a, T: Send] SyncPointBeh for &'a Mutex<T> {
-		#async {
+		/// This section of code is connected only if 
+		/// the current library is asynchronous.
+		#only_async {
 			#[inline(always)]
 			async fn new_lock(&self) -> Self::LockType {
 				Mutex::lock(self).await
@@ -77,7 +85,9 @@ async_or_sync_impltraitcode! {
 				drop(lock_type)
 			}
 		}
-		#sync {
+		/// This section of code is connected only if 
+		/// the current library is synchronous.
+		#only_sync {
 			#[inline(always)]
 			fn new_lock(&self) -> Self::LockType {
 				unimplemented!();
@@ -123,7 +133,7 @@ macro_rules! __synchronized_beh {
 	{
 		// Definition of the current implementation
 		#name
-	} => { "async(tokio+parking_lot)" };
+	} => { "async(tokio+parking_lot+async_trait)" };
 
 	{
 		// Defining a new synchronization point, usually implements static 

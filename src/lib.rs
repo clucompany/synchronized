@@ -315,7 +315,7 @@ pub mod beh {
 	
 	#[cfg_attr(docsrs, doc(cfg( feature = "async" )))]
 	#[cfg( feature = "async" )]
-	//cfg_async! {
+	//cfg_only_async! {
 		pub mod r#async;
 	//}
 	
@@ -473,9 +473,8 @@ macro_rules! synchronized {
 
 /// Describes the selected default lock for the `synchronized` macro. Currently it is `
 #[doc = crate::__synchronized_beh!( #name )]
-/// ` by default.
+/// `.
 pub const CURRENT_DEF_BEH: &'static str = crate::__synchronized_beh!( #name );
-
 
 /// Whether `get_point_name` was enabled in this build.
 /// 
@@ -504,3 +503,15 @@ pub const IS_SYNC_POINT_SUPPORT: bool = {
 		true
 	}
 };
+
+cfg_only_async! {
+	/// Determines if the library code and its locks are fully asynchronous.
+	/// Currently it is `true`.
+	pub const IS_ALWAYS_ASYNC: bool = true;
+}
+
+cfg_not_only_async! {
+	/// Determines if the library code and its locks are fully asynchronous.
+	/// Currently it is `false`.
+	pub const IS_ALWAYS_ASYNC: bool = false;
+}

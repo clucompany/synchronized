@@ -5,16 +5,19 @@ use core::marker::PhantomData;
 
 use core::ops::Deref;
 use core::ops::DerefMut;
-use crate::cfg_async;
-use crate::cfg_not_async;
+use crate::cfg_only_async;
+use crate::cfg_not_only_async;
 
-cfg_async! {
+cfg_only_async! {
+	/// A macro that determines whether to add asynchronous fn support for traits.
 	macro_rules! async_or_sync_newtraitcode {
 		[
 			$(#[$($addmeta:tt)*])*
 			pub trait $name_trait: ident {
-				#async	{ $($async_code:tt)* }
-				#sync	{ $($sync_code:tt)* }
+				$(#[$doc_hide0:meta])* // doc hidden
+				#only_async	{ $($async_code:tt)* }
+				$(#[$doc_hide1:meta])* // doc hidden
+				#only_sync	{ $($sync_code:tt)* }
 				
 				$($code:tt)+
 			}
@@ -26,27 +29,30 @@ cfg_async! {
 			$(#[$($addmeta)*])*
 			#[async_trait]
 			pub trait $name_trait {
-				$($async_code)*
+				$($async_code)* // < -- ONLY ASYNC CODE
 				
 				$($code)+
 			}
 		};
 	}
 }
-cfg_not_async! {
+cfg_not_only_async! {
+	/// A macro that determines whether to add asynchronous fn support for traits.
 	macro_rules! async_or_sync_newtraitcode {
 		[
 			$(#[$($addmeta:tt)*])*
 			pub trait $name_trait: ident {
-				#async	{ $($async_code:tt)* }
-				#sync	{ $($sync_code:tt)* }
+				$(#[$doc_hide0:meta])* // doc hidden
+				#only_async	{ $($async_code:tt)* }
+				$(#[$doc_hide1:meta])* // doc hidden
+				#only_sync	{ $($sync_code:tt)* }
 				
 				$($code:tt)+
 			}
 		] => {
 			$(#[$($addmeta)*])*
 			pub trait $name_trait {
-				$($sync_code)*
+				$($sync_code)* // < -- ONLY SYNC CODE
 				
 				$($code)+
 			}
@@ -57,7 +63,9 @@ cfg_not_async! {
 async_or_sync_newtraitcode! {
 	/// Implementation of the behavior for the used synchronization structure.
 	pub trait SyncPointBeh {
-		#async {
+		/// This section of code is connected only if 
+		/// the current library is asynchronous.
+		#only_async {
 			/// Create a new hold lock.
 			async fn new_lock(&self) -> Self::LockType;
 			
@@ -69,7 +77,9 @@ async_or_sync_newtraitcode! {
 			/// the lock (usually always involves just a drop)
 			async fn unlock(&self, lock_type: Self::LockType);
 		}
-		#sync {
+		/// This section of code is connected only if 
+		/// the current library is synchronous.
+		#only_sync {
 			/// Create a new hold lock.
 			fn new_lock(&self) -> Self::LockType;
 			
@@ -143,13 +153,12 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 		}
 	}
 	
-	cfg_not_async! {
+	cfg_not_only_async! {
 		/// Create a new hold lock.
 		#[inline(always)]
 		pub fn new_lock(&self) -> T::LockType {
 			T::new_lock(&self.mutex_builder)
 		}
-		
 		
 		/// If the lock exists and is not released, then return None, 
 		/// if there is no lock, then create it and return Some.
@@ -166,7 +175,7 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 		}
 	}
 	
-	cfg_async! {
+	cfg_only_async! {
 		/// Create a new hold lock.
 		#[inline(always)]
 		pub async fn new_lock(&self) -> T::LockType {
