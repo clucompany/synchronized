@@ -189,6 +189,7 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 			T::try_lock(&self.mutex_builder).await
 		}
 		
+		/// Destroy the blocking structure and remove the lock
 		/// (usually always involves just a drop).
 		#[inline(always)]
 		pub async fn unlock(&self, lock: T::LockType) {
