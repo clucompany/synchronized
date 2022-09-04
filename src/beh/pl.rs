@@ -23,15 +23,18 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	}
 	
 	#[inline(always)]
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg( feature = "parking_lot" )]
+	#[cfg_attr(docsrs, doc(cfg( feature = "parking_lot" )))]
+	#[cfg( all(
+		feature = "parking_lot",
+		
+		not(feature = "std"),
+		not(feature = "async")
+	) )]
 	fn is_lock(&self) -> bool {
 		Mutex::is_locked(self)
 	}
 	
 	#[inline(always)]
-	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
-	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
 	fn try_lock(&self) -> Option<Self::LockType> {
 		Mutex::try_lock(self)
 	}
@@ -56,7 +59,7 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 /// Definition of the current implementation
 /// 
 #[doc(hidden)]
-#[cfg( all(not(feature = "std")) )]
+#[cfg( all(not(any( feature = "std", feature = "async" ))) )]
 #[macro_export]
 macro_rules! __synchronized_beh {
 	{

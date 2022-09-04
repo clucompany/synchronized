@@ -240,13 +240,13 @@ fn main() {
 
 This section only describes how to choose the default synchronization method for a `synchronized` macro.
 
-### 1. PlugAndPlay (minimal, std)
+### 1. PlugAndPlay (minimal, sync, std)
 
 For a `synchronized` macro, use the primitives implemented by the default `std` library.
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.2"
+version = "1.0.3"
 default-features = false
 features = [
 	"std",
@@ -255,16 +255,31 @@ features = [
 ]
 ```
 
-### 2. PlugAndPlay (minimal, parking_lot)
+### 2. PlugAndPlay (minimal, sync, parking_lot)
 
 For a `synchronized` macro, use the primitives implemented by the default `parking_lot` library.
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.2"
+version = "1.0.3"
 default-features = false
 features = [
 	"parking_lot",
+	#"point",
+	#"get_point_name"
+]
+```
+
+### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_trait)
+
+For a `synchronized` macro, use the primitives implemented by the default `tokio` library.
+
+```rust,ignore
+[dependencies.synchronized]
+version = "1.0.3"
+default-features = false
+features = [
+	"async",
 	#"point",
 	#"get_point_name"
 ]
@@ -286,22 +301,38 @@ pub mod core;
 #[cfg_attr(docsrs, doc(cfg(feature = "point")))]
 mod point;
 
+mod macro_features;
+
 /// Various synchronization primitives used in the `synchronized` macro.
 pub mod beh {
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
+	#[cfg_attr(docsrs, doc(cfg( feature = "parking_lot" )))]
 	#[cfg( feature = "parking_lot" )]
 	pub mod pl;
 	
-	#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+	#[cfg_attr(docsrs, doc(cfg( feature = "std" )))]
 	#[cfg( feature = "std" )]
 	pub mod std;
 	
+	#[cfg_attr(docsrs, doc(cfg( feature = "async" )))]
+	#[cfg( feature = "async" )]
+	//cfg_async! {
+		pub mod r#async;
+	//}
+	
 	// If locking is not selected, then select `std` by default.
 	#[cfg(
-		all(
-			not(feature = "parking_lot"),
-			not(feature = "std"),
-		) 
+		any(
+			all(
+				not(feature = "parking_lot"),
+				not(feature = "std"),
+				not(feature = "async")
+			),
+			/*all(
+				feature = "parking_lot",
+				feature = "std",
+				feature = "async"
+			)*/
+		)
 	)]
 	pub mod std;
 }
@@ -444,6 +475,7 @@ macro_rules! synchronized {
 #[doc = crate::__synchronized_beh!( #name )]
 /// ` by default.
 pub const CURRENT_DEF_BEH: &'static str = crate::__synchronized_beh!( #name );
+
 
 /// Whether `get_point_name` was enabled in this build.
 /// 

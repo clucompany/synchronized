@@ -5,33 +5,100 @@ use core::marker::PhantomData;
 
 use core::ops::Deref;
 use core::ops::DerefMut;
+use crate::cfg_async;
+use crate::cfg_not_async;
 
-/// Implementation of the behavior for the used synchronization structure.
-pub trait SyncPointBeh {
-	/// The actual structure that holds the synchronization 
-	/// and provides access to the data.
-	type LockType: Deref<Target = Self::DerefLockType> + DerefMut;
-	
-	/// The data type to modify, provided by the synchronization structure.
-	type DerefLockType;
-	
-	/// Create a new hold lock.
-	fn new_lock(&self) -> Self::LockType;
-	
-	/// Whether the current lock is active
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg( feature = "parking_lot" )]
-	fn is_lock(&self) -> bool;
-	
-	/// If the lock exists and is not released, then return None, 
-	/// if there is no lock, then create it and return Some.
-	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
-	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
-	fn try_lock(&self) -> Option<Self::LockType>;
-	
-	/// Destroy the blocking structure and remove 
-	/// the lock (usually always involves just a drop)
-	fn unlock(&self, lock_type: Self::LockType);
+cfg_async! {
+	macro_rules! async_or_sync_newtraitcode {
+		[
+			$(#[$($addmeta:tt)*])*
+			pub trait $name_trait: ident {
+				#async	{ $($async_code:tt)* }
+				#sync	{ $($sync_code:tt)* }
+				
+				$($code:tt)+
+			}
+		] => {
+			extern crate alloc;
+			use alloc::boxed::Box;
+			use async_trait::async_trait;
+			
+			$(#[$($addmeta)*])*
+			#[async_trait]
+			pub trait $name_trait {
+				$($async_code)*
+				
+				$($code)+
+			}
+		};
+	}
+}
+cfg_not_async! {
+	macro_rules! async_or_sync_newtraitcode {
+		[
+			$(#[$($addmeta:tt)*])*
+			pub trait $name_trait: ident {
+				#async	{ $($async_code:tt)* }
+				#sync	{ $($sync_code:tt)* }
+				
+				$($code:tt)+
+			}
+		] => {
+			$(#[$($addmeta)*])*
+			pub trait $name_trait {
+				$($sync_code)*
+				
+				$($code)+
+			}
+		};
+	}
+}
+
+async_or_sync_newtraitcode! {
+	/// Implementation of the behavior for the used synchronization structure.
+	pub trait SyncPointBeh {
+		#async {
+			/// Create a new hold lock.
+			async fn new_lock(&self) -> Self::LockType;
+			
+			/// If the lock exists and is not released, then return None, 
+			/// if there is no lock, then create it and return Some.
+			async fn try_lock(&self) -> Option<Self::LockType>;
+			
+			/// Destroy the blocking structure and remove 
+			/// the lock (usually always involves just a drop)
+			async fn unlock(&self, lock_type: Self::LockType);
+		}
+		#sync {
+			/// Create a new hold lock.
+			fn new_lock(&self) -> Self::LockType;
+			
+			/// If the lock exists and is not released, then return None, 
+			/// if there is no lock, then create it and return Some.
+			fn try_lock(&self) -> Option<Self::LockType>;
+			
+			/// Destroy the blocking structure and remove 
+			/// the lock (usually always involves just a drop)
+			fn unlock(&self, lock_type: Self::LockType);
+		}
+		
+		/// The actual structure that holds the synchronization 
+		/// and provides access to the data.
+		type LockType: Deref<Target = Self::DerefLockType> + DerefMut;
+		
+		/// The data type to modify, provided by the synchronization structure.
+		type DerefLockType;
+		
+		/// Whether the current lock is active
+		#[cfg_attr(docsrs, doc(cfg( feature = "parking_lot" )))]
+		#[cfg( all(
+			feature = "parking_lot", 
+			
+			not(feature = "std"),
+			not(feature = "async")
+		) )]
+		fn is_lock(&self) -> bool;
+	}
 }
 
 #[cfg_attr(docsrs, doc(cfg(feature = "get_point_name")))]
@@ -76,34 +143,61 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 		}
 	}
 	
-	/// Create a new hold lock.
-	#[inline(always)]
-	pub fn new_lock(&self) -> T::LockType {
-		T::new_lock(&self.mutex_builder)
+	cfg_not_async! {
+		/// Create a new hold lock.
+		#[inline(always)]
+		pub fn new_lock(&self) -> T::LockType {
+			T::new_lock(&self.mutex_builder)
+		}
+		
+		
+		/// If the lock exists and is not released, then return None, 
+		/// if there is no lock, then create it and return Some.
+		#[inline(always)]
+		pub fn try_lock(&self) -> Option<T::LockType> {
+			T::try_lock(&self.mutex_builder)
+		}
+		
+		/// Destroy the blocking structure and remove the lock 
+		/// (usually always involves just a drop).
+		#[inline(always)]
+		pub fn unlock(&self, lock: T::LockType) {
+			T::unlock(&self.mutex_builder, lock)
+		}
 	}
 	
-	/// Destroy the blocking structure and remove the lock 
-	/// (usually always involves just a drop).
-	#[inline(always)]
-	pub fn unlock(&self, lock: T::LockType) {
-		T::unlock(&self.mutex_builder, lock);
+	cfg_async! {
+		/// Create a new hold lock.
+		#[inline(always)]
+		pub async fn new_lock(&self) -> T::LockType {
+			T::new_lock(&self.mutex_builder).await
+		}
+		
+		/// If the lock exists and is not released, then return None, 
+		/// if there is no lock, then create it and return Some.
+		#[inline(always)]
+		pub async fn try_lock(&self) -> Option<T::LockType> {
+			T::try_lock(&self.mutex_builder).await
+		}
+		
+		/// (usually always involves just a drop).
+		#[inline(always)]
+		pub async fn unlock(&self, lock: T::LockType) {
+			T::unlock(&self.mutex_builder, lock).await
+		}
 	}
 	
 	/// Whether the current lock is active
 	#[inline(always)]
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg( feature = "parking_lot" )]
+	#[cfg_attr(docsrs, doc(cfg( feature = "parking_lot" )))]
+	#[cfg( all(
+		feature = "parking_lot", 
+		
+		not(feature = "std"),
+		not(feature = "async")
+	) )]
 	pub fn is_lock(&self) -> bool {
 		T::is_lock(&self.mutex_builder)
-	}
-	
-	/// If the lock exists and is not released, then return None, 
-	/// if there is no lock, then create it and return Some.
-	#[inline(always)]
-	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
-	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
-	pub fn try_lock(&self) -> Option<T::LockType> {
-		T::try_lock(&self.mutex_builder)
 	}
 }
 

@@ -4,7 +4,7 @@
 
 extern crate std;
 
-use std::sync::MutexGuard;
+pub use std::sync::MutexGuard;
 use crate::core::SyncPointBeh;
 pub use std::sync::Mutex;
 
@@ -24,16 +24,7 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 		}
 	}
 	
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg( feature = "parking_lot" )]
 	#[inline(always)]
-	fn is_lock(&self) -> bool {
-		true
-	}
-	
-	#[inline(always)]
-	#[cfg_attr(docsrs, doc(cfg( any( feature = "parking_lot", feature = "std" ) )))]
-	#[cfg( any( feature = "parking_lot", feature = "std" ) )]
 	fn try_lock(&self) -> Option<Self::LockType> {
 		match Mutex::try_lock(self) {
 			Ok(a) => Some(a),

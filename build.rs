@@ -10,6 +10,7 @@
 		not(feature = "doc_cfg"),
 		feature = "parking_lot",
 		feature = "std",
+		feature = "async",
 	)
 )]
 #[inline(always)]
@@ -27,7 +28,7 @@ fn main() {
 		};
 	}
 	
-	cwarning!(@const: "synchronized: The choice of synchronization between `std` and `parking_lot` was expected by default for `synchronized` macro. It is not possible to use both synchronization methods at the same time, `std` is now used.");
+	cwarning!(@const: "synchronized: The choice of synchronization between `std` and `parking_lot`, and async(tokio+parking_lot) was expected by default for `synchronized` macro. It is not possible to use both synchronization methods at the same time, `std` is now used.");
 }
 
 #[cfg( 
@@ -38,6 +39,8 @@ fn main() {
 		not(feature = "doc_cfg"),
 		feature = "parking_lot",
 		feature = "std",
+		feature = "async",
 	))
 )]
+#[inline(always)]
 fn main() {}

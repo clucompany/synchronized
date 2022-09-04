@@ -227,13 +227,13 @@ fn main() {
 
 This section only describes how to choose the default synchronization method for a `synchronized` macro.
 
-### 1. PlugAndPlay (minimal, std)
+### 1. PlugAndPlay (minimal, sync, std)
 
 For a `synchronized` macro, use the primitives implemented by the default `std` library.
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.2"
+version = "1.0.3"
 default-features = false
 features = [
 	"std",
@@ -242,16 +242,31 @@ features = [
 ]
 ```
 
-### 2. PlugAndPlay (minimal, parking_lot)
+### 2. PlugAndPlay (minimal, sync, parking_lot)
 
 For a `synchronized` macro, use the primitives implemented by the default `parking_lot` library.
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.2"
+version = "1.0.3"
 default-features = false
 features = [
 	"parking_lot",
+	#"point",
+	#"get_point_name"
+]
+```
+
+### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_-_trait)
+
+For a `synchronized` macro, use the primitives implemented by the default `tokio` library.
+
+```rust,ignore
+[dependencies.synchronized]
+version = "1.0.3"
+default-features = false
+features = [
+	"async",
 	#"point",
 	#"get_point_name"
 ]
