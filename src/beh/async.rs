@@ -7,62 +7,9 @@ extern crate tokio;
 pub use tokio::sync::Mutex;
 pub use tokio::sync::MutexGuard;
 use crate::core::SyncPointBeh;
-use crate::cfg_not_only_async;
-use crate::cfg_only_async;
 
-cfg_only_async! {
-	/// A macro that determines whether to add asynchronous fn support for traits.
-	macro_rules! async_or_sync_impltraitcode {
-		[
-			$(#[$($addmeta:tt)*])*
-			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
-				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
-				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
-				
-				$($code:tt)+
-			}
-		] => {
-			extern crate alloc;
-			use alloc::boxed::Box;
-			use async_trait::async_trait;
-			
-			$(#[$($addmeta)*])*
-			#[async_trait]
-			impl $(<$($left)*>)? $name_trait for $impl_ty {
-				$($async_code)*
-				
-				$($code)+
-			}
-		};
-	}
-}
-cfg_not_only_async! {
-	/// A macro that determines whether to add asynchronous fn support for traits.
-	macro_rules! async_or_sync_impltraitcode {
-		[
-			$(#[$($addmeta:tt)*])*
-			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
-				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
-				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
-				
-				$($code:tt)+
-			}
-		] => {
-			$(#[$($addmeta)*])*
-			impl $(<$($left)*>)? $name_trait for $impl_ty {
-				$($sync_code)*
-				
-				$($code)+
-			}
-		};
-	}
-}
 
-async_or_sync_impltraitcode! {
+async_or_sync_code! {
 	impl[T: Send] SyncPointBeh for Mutex<T> {
 		/// This section of code is connected only if 
 		/// the current library is asynchronous.
@@ -103,11 +50,7 @@ async_or_sync_impltraitcode! {
 				unimplemented!();
 			}
 		}
-		
-		// !!! ATTENTION
-		// Due to the inability to make <'a> in stable growth, 
-		// you have to do &'a and then make strange types out of it.
-		//
+	
 		type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 		type DerefLockType = T;
 	}

@@ -10,10 +10,6 @@ pub use parking_lot::MutexGuard;
 pub use parking_lot::const_mutex;
 
 impl<T> SyncPointBeh for Mutex<T> {
-	// !!! ATTENTION
-	// Due to the inability to make <'a> in stable growth, 
-	// you have to do &'a and then make strange types out of it.
-	//
 	type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 	type DerefLockType = T;
 	

@@ -8,59 +8,7 @@ use core::ops::DerefMut;
 use crate::cfg_only_async;
 use crate::cfg_not_only_async;
 
-cfg_only_async! {
-	/// A macro that determines whether to add asynchronous fn support for traits.
-	macro_rules! async_or_sync_newtraitcode {
-		[
-			$(#[$($addmeta:tt)*])*
-			pub trait $name_trait: ident {
-				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
-				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
-				
-				$($code:tt)+
-			}
-		] => {
-			extern crate alloc;
-			use alloc::boxed::Box;
-			use async_trait::async_trait;
-			
-			$(#[$($addmeta)*])*
-			#[async_trait]
-			pub trait $name_trait {
-				$($async_code)* // < -- ONLY ASYNC CODE
-				
-				$($code)+
-			}
-		};
-	}
-}
-cfg_not_only_async! {
-	/// A macro that determines whether to add asynchronous fn support for traits.
-	macro_rules! async_or_sync_newtraitcode {
-		[
-			$(#[$($addmeta:tt)*])*
-			pub trait $name_trait: ident {
-				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
-				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
-				
-				$($code:tt)+
-			}
-		] => {
-			$(#[$($addmeta)*])*
-			pub trait $name_trait {
-				$($sync_code)* // < -- ONLY SYNC CODE
-				
-				$($code)+
-			}
-		};
-	}
-}
-
-async_or_sync_newtraitcode! {
+async_or_sync_code! {
 	/// Implementation of the behavior for the used synchronization structure.
 	pub trait SyncPointBeh {
 		/// This section of code is connected only if 

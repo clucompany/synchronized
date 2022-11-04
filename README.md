@@ -233,7 +233,7 @@ For a `synchronized` macro, use the primitives implemented by the default `std` 
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"std",
@@ -248,7 +248,7 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"parking_lot",
@@ -263,7 +263,7 @@ For a `synchronized` macro, use the primitives implemented by the default `tokio
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"async",

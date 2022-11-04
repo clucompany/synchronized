@@ -246,7 +246,7 @@ For a `synchronized` macro, use the primitives implemented by the default `std` 
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"std",
@@ -261,7 +261,7 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"parking_lot",
@@ -276,7 +276,7 @@ For a `synchronized` macro, use the primitives implemented by the default `tokio
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.3"
+version = "1.0.4"
 default-features = false
 features = [
 	"async",
@@ -296,10 +296,13 @@ features = [
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[macro_use]
+mod async_core;
 pub mod core;
 #[cfg( feature = "point" )]
 #[cfg_attr(docsrs, doc(cfg(feature = "point")))]
 mod point;
+
 
 mod macro_features;
 
@@ -316,7 +319,7 @@ pub mod beh {
 	#[cfg_attr(docsrs, doc(cfg( feature = "async" )))]
 	#[cfg( feature = "async" )]
 	//cfg_only_async! {
-		pub mod r#async;
+	pub mod r#async;
 	//}
 	
 	// If locking is not selected, then select `std` by default.

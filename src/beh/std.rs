@@ -9,10 +9,6 @@ use crate::core::SyncPointBeh;
 pub use std::sync::Mutex;
 
 impl<T> SyncPointBeh for Mutex<T> {
-	// !!! ATTENTION
-	// Due to the inability to make <'a> in stable growth, 
-	// you have to do &'a and then make strange types out of it.
-	//
 	type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 	type DerefLockType = T;
 	
@@ -33,7 +29,7 @@ impl<T> SyncPointBeh for Mutex<T> {
 	}
 	
 	#[inline(always)]
-	fn unlock(&self, lock_type: Self::LockType<'_>) {
+	fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>) {
 		drop(lock_type)
 	}
 }
