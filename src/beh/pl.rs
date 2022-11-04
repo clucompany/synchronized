@@ -9,16 +9,16 @@ pub use parking_lot::Mutex;
 pub use parking_lot::MutexGuard;
 pub use parking_lot::const_mutex;
 
-impl<'a, T> SyncPointBeh for &'a Mutex<T> {
+impl<T> SyncPointBeh for Mutex<T> {
 	// !!! ATTENTION
 	// Due to the inability to make <'a> in stable growth, 
 	// you have to do &'a and then make strange types out of it.
 	//
-	type LockType = MutexGuard<'a, T>;
+	type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 	type DerefLockType = T;
 	
 	#[inline(always)]
-	fn new_lock(&self) -> Self::LockType {
+	fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
 		Mutex::lock(self)
 	}
 	
@@ -35,12 +35,12 @@ impl<'a, T> SyncPointBeh for &'a Mutex<T> {
 	}
 	
 	#[inline(always)]
-	fn try_lock(&self) -> Option<Self::LockType> {
+	fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
 		Mutex::try_lock(self)
 	}
 	
 	#[inline(always)]
-	fn unlock(&self, lock_type: Self::LockType) {
+	fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>) {
 		drop(lock_type)
 	}
 }
@@ -74,18 +74,15 @@ macro_rules! __synchronized_beh {
 	} => {
 		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
 		
-		#[allow(dead_code)]
-		static CONST_MUTEX: $crate::beh::pl::Mutex<$t> = $crate::beh::pl::const_mutex(
-			$t_make
-		);
-		
 		/// Generated Synchronization Point
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			&'static $crate::beh::pl::Mutex<$t>,
+			$crate::beh::pl::Mutex<$t>,
 			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
-		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
+		> = $crate::core::SyncPoint::new($crate::beh::pl::const_mutex(
+			$t_make
+		));
 	};
 	{
 		// Creates a new lock on an already created sync point (#new_point)

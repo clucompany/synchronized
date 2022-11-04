@@ -67,34 +67,34 @@ async_or_sync_newtraitcode! {
 		/// the current library is asynchronous.
 		#only_async {
 			/// Create a new hold lock.
-			async fn new_lock(&self) -> Self::LockType;
+			async fn new_lock<'a>(&'a self) -> Self::LockType<'a>;
 			
 			/// If the lock exists and is not released, then return None, 
 			/// if there is no lock, then create it and return Some.
-			async fn try_lock(&self) -> Option<Self::LockType>;
+			async fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>>;
 			
 			/// Destroy the blocking structure and remove 
 			/// the lock (usually always involves just a drop)
-			async fn unlock(&self, lock_type: Self::LockType);
+			async fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>);
 		}
 		/// This section of code is connected only if 
 		/// the current library is synchronous.
 		#only_sync {
 			/// Create a new hold lock.
-			fn new_lock(&self) -> Self::LockType;
+			fn new_lock<'a>(&'a self) -> Self::LockType<'a>;
 			
 			/// If the lock exists and is not released, then return None, 
 			/// if there is no lock, then create it and return Some.
-			fn try_lock(&self) -> Option<Self::LockType>;
+			fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>>;
 			
 			/// Destroy the blocking structure and remove 
 			/// the lock (usually always involves just a drop)
-			fn unlock(&self, lock_type: Self::LockType);
+			fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>);
 		}
 		
 		/// The actual structure that holds the synchronization 
 		/// and provides access to the data.
-		type LockType: Deref<Target = Self::DerefLockType> + DerefMut;
+		type LockType<'a>: Deref<Target = Self::DerefLockType> + DerefMut where Self: 'a;
 		
 		/// The data type to modify, provided by the synchronization structure.
 		type DerefLockType;
@@ -156,21 +156,21 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 	cfg_not_only_async! {
 		/// Create a new hold lock.
 		#[inline(always)]
-		pub fn new_lock(&self) -> T::LockType {
+		pub fn new_lock<'a>(&'a self) -> T::LockType<'a> {
 			T::new_lock(&self.mutex_builder)
 		}
 		
 		/// If the lock exists and is not released, then return None, 
 		/// if there is no lock, then create it and return Some.
 		#[inline(always)]
-		pub fn try_lock(&self) -> Option<T::LockType> {
+		pub fn try_lock<'a>(&'a self) -> Option<T::LockType<'a>> {
 			T::try_lock(&self.mutex_builder)
 		}
 		
 		/// Destroy the blocking structure and remove the lock 
 		/// (usually always involves just a drop).
 		#[inline(always)]
-		pub fn unlock(&self, lock: T::LockType) {
+		pub fn unlock<'a>(&'a self, lock: T::LockType<'a>) {
 			T::unlock(&self.mutex_builder, lock)
 		}
 	}
@@ -178,21 +178,21 @@ impl<T, N> SyncPoint<T, N> where T: SyncPointBeh {
 	cfg_only_async! {
 		/// Create a new hold lock.
 		#[inline(always)]
-		pub async fn new_lock(&self) -> T::LockType {
+		pub async fn new_lock<'a>(&'a self) -> T::LockType<'a> {
 			T::new_lock(&self.mutex_builder).await
 		}
 		
 		/// If the lock exists and is not released, then return None, 
 		/// if there is no lock, then create it and return Some.
 		#[inline(always)]
-		pub async fn try_lock(&self) -> Option<T::LockType> {
+		pub async fn try_lock<'a>(&'a self) -> Option<T::LockType<'a>> {
 			T::try_lock(&self.mutex_builder).await
 		}
 		
 		/// Destroy the blocking structure and remove the lock
 		/// (usually always involves just a drop).
 		#[inline(always)]
-		pub async fn unlock(&self, lock: T::LockType) {
+		pub async fn unlock<'a>(&'a self, lock: T::LockType<'a>) {
 			T::unlock(&self.mutex_builder, lock).await
 		}
 	}

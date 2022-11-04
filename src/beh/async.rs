@@ -63,17 +63,17 @@ cfg_not_only_async! {
 }
 
 async_or_sync_impltraitcode! {
-	impl['a, T: Send] SyncPointBeh for &'a Mutex<T> {
+	impl[T: Send] SyncPointBeh for Mutex<T> {
 		/// This section of code is connected only if 
 		/// the current library is asynchronous.
 		#only_async {
 			#[inline(always)]
-			async fn new_lock(&self) -> Self::LockType {
+			async fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
 				Mutex::lock(self).await
 			}
 			
 			#[inline(always)]
-			async fn try_lock(&self) -> Option<Self::LockType> {
+			async fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
 				match Mutex::try_lock(self) {
 					Ok(a) => Some(a),
 					_ => None,
@@ -81,7 +81,7 @@ async_or_sync_impltraitcode! {
 			}
 			
 			#[inline(always)]
-			async fn unlock(&self, lock_type: Self::LockType) {
+			async fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>) {
 				drop(lock_type)
 			}
 		}
@@ -89,17 +89,17 @@ async_or_sync_impltraitcode! {
 		/// the current library is synchronous.
 		#only_sync {
 			#[inline(always)]
-			fn new_lock(&self) -> Self::LockType {
+			fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
 				unimplemented!();
 			}
 			
 			#[inline(always)]
-			fn try_lock(&self) -> Option<Self::LockType> {
+			fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
 				unimplemented!();
 			}
 			
 			#[inline(always)]
-			fn unlock(&self, _lock_type: Self::LockType) {
+			fn unlock<'a>(&'a self, _lock_type: Self::LockType<'a>) {
 				unimplemented!();
 			}
 		}
@@ -108,7 +108,7 @@ async_or_sync_impltraitcode! {
 		// Due to the inability to make <'a> in stable growth, 
 		// you have to do &'a and then make strange types out of it.
 		//
-		type LockType = MutexGuard<'a, T>;
+		type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 		type DerefLockType = T;
 	}
 }
@@ -142,18 +142,15 @@ macro_rules! __synchronized_beh {
 	} => {
 		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
 		
-		#[allow(dead_code)]
-		static CONST_MUTEX: $crate::beh::r#async::Mutex<$t> = $crate::beh::r#async::Mutex::const_new(
-			$t_make
-		);
-		
 		/// Generated Synchronization Point
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			&'static $crate::beh::r#async::Mutex<$t>, 
+			$crate::beh::r#async::Mutex<$t>, 
 			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
-		> = $crate::core::SyncPoint::new(&CONST_MUTEX);
+		> = $crate::core::SyncPoint::new($crate::beh::r#async::Mutex::const_new(
+			$t_make
+		));
 	};
 	{
 		// Creates a new lock on an already created sync point (#new_point)
