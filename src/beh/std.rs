@@ -1,34 +1,33 @@
-
-//! Synchronization primitive for the `synchronized` 
+//! Synchronization primitive for the `synchronized`
 //! macro implemented by the `std` library.
 
 extern crate std;
 
-pub use std::sync::MutexGuard;
 use crate::core::SyncPointBeh;
 pub use std::sync::Mutex;
+pub use std::sync::MutexGuard;
 
 impl<T> SyncPointBeh for Mutex<T> {
-	type LockType<'a> = MutexGuard<'a, T> where T: 'a;
+	type LockType<'a>
+		= MutexGuard<'a, T>
+	where
+		T: 'a;
 	type DerefLockType = T;
-	
-	#[inline(always)]
-	fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
+
+	#[inline]
+	fn new_lock(&self) -> Self::LockType<'_> {
 		match Mutex::lock(self) {
 			Ok(a) => a,
 			Err(e) => e.into_inner(),
 		}
 	}
-	
-	#[inline(always)]
-	fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
-		match Mutex::try_lock(self) {
-			Ok(a) => Some(a),
-			_ => None,
-		}
+
+	#[inline]
+	fn try_lock(&self) -> Option<Self::LockType<'_>> {
+		Mutex::try_lock(self).ok()
 	}
-	
-	#[inline(always)]
+
+	#[inline]
 	fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>) {
 		drop(lock_type)
 	}
@@ -46,28 +45,25 @@ impl<T> SyncPointBeh for Mutex<T> {
 /// Deletes a newly created lock (#new_lock)
 /// 4. #name
 /// Definition of the current implementation
-/// 
-#[doc(hidden)]
 #[macro_export]
-macro_rules! __synchronized_beh {
+#[doc(hidden)]
+macro_rules! __sync_beh {
 	{
 		// Definition of the current implementation
 		#name
 	} => { "std" };
 
 	{
-		// Defining a new synchronization point, usually implements static 
+		// Defining a new synchronization point, usually implements static
 		// variables used during synchronization.
 		#new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident
 	} => {
-		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
-		
 		/// Generated Synchronization Point
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
+		#[allow(non_camel_case_types)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			$crate::beh::std::Mutex<$t>, 
-			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
+			$crate::beh::std::Mutex<$t>
 		> = $crate::core::SyncPoint::new(
 			$crate::beh::std::Mutex::new(
 				$t_make

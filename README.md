@@ -11,7 +11,7 @@ Convenient and simple macro for code synchronization in multithreading.
 ### 1. easy/sync
 
 ```rust
-use synchronized::synchronized;
+use synchronized::sync;
 
 /*
 	Quick implementation examples of blocking anonymous code.
@@ -20,13 +20,13 @@ use synchronized::synchronized;
 fn main() {
 	// #1 Anonymous inter-threaded synchronized code, 
 	// in the case of multi-threading, one thread will wait for the completion of another.
-	synchronized! {
+	sync! {
 		println!("1");
 	}
 	
 	// #2 Anonymous inter-threaded synchronized code, 
 	// in the case of multi-threading, one thread will wait for the completion of another.
-	synchronized!( println!("1"); );
+	sync!( println!("1"); );
 }
 ```
 
@@ -34,7 +34,7 @@ fn main() {
 
 ```rust
 use std::thread::spawn;
-use synchronized::synchronized;
+use synchronized::sync;
 
 /*
 	A more illustrative example of code blocking implementation 
@@ -73,7 +73,7 @@ fn sync_fn() -> usize {
 	//
 	// The code will never run at the same time. If one thread is executing 
 	// this code, the second thread will wait for this code to finish executing.
-	let result = synchronized! {
+	let result = sync! {
 		static mut POINT0: usize = 0;
 		static mut POINT1: usize = 0;
 		
@@ -93,7 +93,7 @@ fn sync_fn() -> usize {
 
 ```rust
 use std::thread::spawn;
-use synchronized::synchronized;
+use synchronized::sync;
 
 /*
 	An example that describes how to quickly create an anonymous 
@@ -111,7 +111,7 @@ fn main() {
 	for thread_id in 0..5 {
 		let join = spawn(move || {
 			// Create anonymous synchronized code with one mutable variable `sync_let` and `count`.
-			let result = synchronized!(
+			let result = sync!(
 				(sync_let: String = String::new(), count: usize = 0) {
 					// If it's the first thread, 
 					// then theoretically `sync_let` is String::new().
@@ -167,21 +167,12 @@ fn main() {
 	!!! In this example, the assembly requires the `point` feature to be active.
 */
 
-#[cfg( feature = "point" )]
-use synchronized::synchronized_point;
-#[cfg( feature = "point" )]
-use synchronized::synchronized;
-
-#[cfg( not(feature = "point") )]
-macro_rules! synchronized_point {
-	[ $($unk:tt)* ] => {
-		println!("!!! This example requires support for the `point` feature. Run the example with `cargo run --example point --all-features`.");
-	};
-}
+use synchronized::sync_point;
+use synchronized::sync;
 
 fn main() {
 	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
-	synchronized_point! {(COMB_SYNC) {
+	sync_point! {(COMB_SYNC) {
 		static mut POINT: usize = 0;
 		println!("GeneralSyncPoint, name_point: {}", COMB_SYNC.get_sync_point_name());
 		
@@ -190,7 +181,7 @@ fn main() {
 		//
 		// This code is not executed concurrently in a multi-threaded environment, 
 		// one thread is waiting for someone else's code to execute in this part of the code.
-		let result0 = synchronized! ((->COMB_SYNC) {
+		let result0 = sync! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
 				POINT += 1;
@@ -208,7 +199,7 @@ fn main() {
 		// Note that `result0` and `result1` cannot be calculated at the same time, 
 		// this does not happen because `result0` or `result1` are calculated in 
 		// synchronized code with a single sync point of the same name.
-		let result1 = synchronized! ((->COMB_SYNC) {
+		let result1 = sync! ((->COMB_SYNC) {
 			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
 			unsafe {
 				POINT += 1;
@@ -238,7 +229,6 @@ default-features = false
 features = [
 	"std",
 	#"point",
-	#"get_point_name"
 ]
 ```
 
@@ -248,12 +238,11 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"parking_lot",
 	#"point",
-	#"get_point_name"
 ]
 ```
 
@@ -263,12 +252,11 @@ For a `synchronized` macro, use the primitives implemented by the default `tokio
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"async",
 	#"point",
-	#"get_point_name"
 ]
 ```
 
@@ -280,6 +268,6 @@ features = [
 
 # License
 
-Copyright 2022 #UlinProject Denis Kotlyarov (Денис Котляров)
+Copyright 2022-2025 #UlinProject Denis Kotlyarov (Денис Котляров)
 
 Licensed under the Apache License, Version 2.0
