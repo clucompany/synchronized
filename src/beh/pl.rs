@@ -64,15 +64,12 @@ macro_rules! __sync_beh {
 		// variables used during synchronization.
 		#new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident
 	} => {
-		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
-
 		/// Generated Synchronization Point
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
 		#[allow(non_camel_case_types)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			$crate::beh::pl::Mutex<$t>,
-			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
+			$crate::beh::pl::Mutex<$t>
 		> = $crate::core::SyncPoint::new($crate::beh::pl::const_mutex(
 			$t_make
 		));
