@@ -1,5 +1,3 @@
-use synchronized::{sync, sync_point};
-
 /*
 	An example of the implementation of sync code with one non-anonymous (named)
 	synchronization point with one mutable variable.
@@ -7,7 +5,10 @@ use synchronized::{sync, sync_point};
 	!!! In this example, the assembly requires the `point` feature to be active.
 */
 
+#[cfg(not(feature = "async"))]
 fn main() {
+	use synchronized::{sync, sync_point};
+
 	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
 	//
 	// Note that the sync point has a mutable `String` and `usize` variable with a default value
@@ -60,4 +61,9 @@ fn main() {
 		// Display debug information.
 		println!("result, res0: {:?}, res1: {:?}, res2: {:?}", result0, result1, result2);
 	}}
+}
+
+#[cfg(feature = "async")]
+fn main() {
+	println!("This example only builds and runs with --feature=\"sync\"");
 }

@@ -1,6 +1,3 @@
-use std::thread::spawn;
-use synchronized::sync;
-
 /*
 	A more illustrative example of code blocking implementation
 	for SAFE mutability of two or more static variables.
@@ -12,7 +9,11 @@ use synchronized::sync;
 	easier and more beneficial in terms of use and performance.
 */
 
+#[cfg(not(feature = "async"))]
 fn main() {
+	use std::thread::spawn;
+	use synchronized::sync;
+
 	// An array of handles to wait for all threads to complete.
 	let mut join_all = Vec::new();
 
@@ -31,24 +32,29 @@ fn main() {
 	for tjoin in join_all {
 		let _e = tjoin.join();
 	}
+
+	fn sync_fn() -> usize {
+		// Create anonymous synchronized code.
+		//
+		// The code will never run at the same time. If one thread is executing
+		// this code, the second thread will wait for this code to finish executing.
+		let result = sync! {
+			static mut POINT0: usize = 0;
+			static mut POINT1: usize = 0;
+
+			unsafe {
+				POINT1 = POINT0;
+				POINT0 += 1;
+
+				POINT1
+			}
+		};
+
+		result
+	}
 }
 
-fn sync_fn() -> usize {
-	// Create anonymous synchronized code.
-	//
-	// The code will never run at the same time. If one thread is executing
-	// this code, the second thread will wait for this code to finish executing.
-	let result = sync! {
-		static mut POINT0: usize = 0;
-		static mut POINT1: usize = 0;
-
-		unsafe {
-			POINT1 = POINT0;
-			POINT0 += 1;
-
-			POINT1
-		}
-	};
-
-	result
+#[cfg(feature = "async")]
+fn main() {
+	println!("This example only builds and runs with --feature=\"sync\"");
 }

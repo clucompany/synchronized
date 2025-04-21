@@ -14,41 +14,30 @@ cfg_async_or_sync! {
 		/// the current library is asynchronous.
 		#only_async {
 			#[inline]
-			async fn new_lock(&self) -> Self::LockType<'_> {
-				Mutex::lock(self).await
-			}
-
-			#[inline]
-			async fn try_lock(&self) -> Option<Self::LockType<'_>> {
-				Mutex::try_lock(self).ok()
-			}
-
-			#[inline]
-			async fn unlock(&self, lock_type: Self::LockType<'_>) {
-				drop(lock_type)
+			fn new_lock(&self) -> impl core::future::Future<Output = Self::LockType<'_>> + Send {
+				Mutex::lock(self)
 			}
 		}
 		/// This section of code is connected only if
 		/// the current library is synchronous.
 		#only_sync {
 			#[inline]
-			fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
-				unimplemented!();
-			}
-
-			#[inline]
-			fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
-				unimplemented!();
-			}
-
-			#[inline]
-			fn unlock<'a>(&'a self, _lock_type: Self::LockType<'a>) {
+			fn new_lock(&self) -> Self::LockType<'_> {
 				unimplemented!();
 			}
 		}
-
 		type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 		type DerefLockType = T;
+
+		#[inline]
+		fn try_lock(&self) -> Option<Self::LockType<'_>> {
+			Mutex::try_lock(self).ok()
+		}
+
+		#[inline]
+		fn unlock(&self, lock_type: Self::LockType<'_>) {
+			drop(lock_type)
+		}
 	}
 }
 
@@ -66,12 +55,12 @@ cfg_async_or_sync! {
 /// Definition of the current implementation
 #[macro_export]
 #[doc(hidden)]
-#[cfg(not(any(feature = "parking_lot", feature = "std")))]
+#[cfg(not(any(feature = "pl", feature = "std")))]
 macro_rules! __sync_beh {
 	{
 		// Definition of the current implementation
 		#name
-	} => { "async(tokio+parking_lot+async_trait)" };
+	} => { "async(tokio+parking_lot)" };
 
 	{
 		// Defining a new synchronization point, usually implements static
@@ -100,6 +89,6 @@ macro_rules! __sync_beh {
 		// Deletes a newly created lock (#new_lock)
 		#drop_lock($lock: ident): $v_point_name:ident
 	} => {
-		$crate::core::SyncPoint::unlock(&$v_point_name, $lock).await;
+		$crate::core::SyncPoint::unlock(&$v_point_name, $lock);
 	};
 }

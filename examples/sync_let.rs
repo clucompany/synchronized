@@ -1,6 +1,3 @@
-use std::thread::spawn;
-use synchronized::sync;
-
 /*
 	An example that describes how to quickly create an anonymous
 	sync with a mutable variable.
@@ -9,7 +6,11 @@ use synchronized::sync;
 	the `sync_let` variable with data while executing the synchronized anonymous code.
 */
 
+#[cfg(not(feature = "async"))]
 fn main() {
+	use std::thread::spawn;
+	use synchronized::sync;
+
 	// An array of handles to wait for all threads to complete.
 	let mut join_all = Vec::new();
 
@@ -55,4 +56,9 @@ fn main() {
 	for tjoin in join_all {
 		let _e = tjoin.join();
 	}
+}
+
+#[cfg(feature = "async")]
+fn main() {
+	println!("This example only builds and runs with --feature=\"sync\"");
 }

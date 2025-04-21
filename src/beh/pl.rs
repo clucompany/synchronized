@@ -16,19 +16,19 @@ impl<T> SyncPointBeh for Mutex<T> {
 	type DerefLockType = T;
 
 	#[inline]
-	fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
+	fn new_lock(&self) -> Self::LockType<'_> {
 		Mutex::lock(self)
 	}
 
 	#[inline]
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg(all(feature = "parking_lot", not(feature = "std"), not(feature = "async")))]
+	#[cfg_attr(docsrs, doc(cfg(feature = "pl")))]
+	#[cfg(all(feature = "pl", not(feature = "std"), not(feature = "async")))]
 	fn is_lock(&self) -> bool {
 		Mutex::is_locked(self)
 	}
 
 	#[inline]
-	fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
+	fn try_lock(&self) -> Option<Self::LockType<'_>> {
 		Mutex::try_lock(self)
 	}
 
@@ -52,7 +52,7 @@ impl<T> SyncPointBeh for Mutex<T> {
 /// Definition of the current implementation
 #[macro_export]
 #[doc(hidden)]
-#[cfg(all(not(any(feature = "std", feature = "async"))))]
+#[cfg(not(any(feature = "std", feature = "async")))]
 macro_rules! __sync_beh {
 	{
 		// Definition of the current implementation

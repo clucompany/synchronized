@@ -38,9 +38,9 @@ jobs:
       run: cargo test --no-default-features --lib --verbose
     - name: Run cargo alltest
       run: cargo test --all-features --verbose
-    - name: Std
+    - name: STD
       run: cargo test --no-default-features --features std,point --lib --verbose --examples
     - name: PL
-      run: cargo test --no-default-features --features parking_lot,point --lib --verbose --examples
-    - name: ASYNC(TOKIO+PL)
+      run: cargo test --no-default-features --features pl,point --lib --verbose --examples
+    - name: ASYNC(TOKIO)
       run: cargo test --no-default-features --features async,point --lib --verbose --tests

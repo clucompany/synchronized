@@ -10,9 +10,10 @@
 	!!! In this example, the assembly requires the `point` feature to be active.
 */
 
-use synchronized::{sync, sync_point};
-
+#[cfg(not(feature = "async"))]
 fn main() {
+	use synchronized::{sync, sync_point};
+
 	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
 	sync_point! {(COMB_SYNC) {
 		static mut POINT: usize = 0;
@@ -50,4 +51,9 @@ fn main() {
 		// Display debug information.
 		println!("result, res0: {:?}, res1: {:?}", result0, result1);
 	}}
+}
+
+#[cfg(feature = "async")]
+fn main() {
+	println!("This example only builds and runs with --feature=\"sync\"");
 }

@@ -260,7 +260,7 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 version = "1.0.4"
 default-features = false
 features = [
-	"parking_lot",
+	"pl",
 	#"point"
 ]
 ```
@@ -393,7 +393,7 @@ macro_rules! sync {
 		// Named sync block named `$v_point_name`.
 		($v_point_name: ident) $($all:tt)*
 	} => {{
-		$crate::synchronized! {
+		$crate::sync! {
 			$v_point_name (__empty_value: () = ()) $($all)*
 		}
 	}};

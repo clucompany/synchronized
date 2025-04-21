@@ -7,9 +7,13 @@ cfg_async! {
 			$(#[$($addmeta:tt)*])*
 			pub trait $name_trait: ident {
 				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
+				#only_async {
+					$($async_code:tt)*
+				}
 				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
+				#only_sync	{
+					$($sync_code:tt)*
+				}
 
 				$($code:tt)+
 			}
@@ -25,9 +29,13 @@ cfg_async! {
 			$(#[$($addmeta:tt)*])*
 			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
 				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
+				#only_async	{
+					$($async_code:tt)*
+				}
 				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
+				#only_sync	{
+					$($sync_code:tt)*
+				}
 
 				$($code:tt)+
 			}
@@ -49,9 +57,13 @@ cfg_not_async! {
 			$(#[$($addmeta:tt)*])*
 			pub trait $name_trait: ident {
 				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
+				#only_async	{
+					$($async_code:tt)*
+				}
 				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
+				#only_sync	{
+					$($sync_code:tt)*
+				}
 
 				$($code:tt)+
 			}
@@ -67,9 +79,13 @@ cfg_not_async! {
 			$(#[$($addmeta:tt)*])*
 			impl $([$($left:tt)*])? $name_trait: ident for $impl_ty: ty {
 				$(#[$doc_hide0:meta])* // doc hidden
-				#only_async	{ $($async_code:tt)* }
+				#only_async	{
+					$($async_code:tt)*
+				}
 				$(#[$doc_hide1:meta])* // doc hidden
-				#only_sync	{ $($sync_code:tt)* }
+				#only_sync	{
+					$($sync_code:tt)*
+				}
 
 				$($code:tt)+
 			}

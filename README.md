@@ -241,7 +241,7 @@ For a `synchronized` macro, use the primitives implemented by the default `parki
 version = "1.1.0"
 default-features = false
 features = [
-	"parking_lot",
+	"pl",
 	#"point",
 ]
 ```

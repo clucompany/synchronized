@@ -4,25 +4,17 @@
 	docsrs,
 	doc(cfg(any(
 		feature = "std",
-		all(
-			not(feature = "parking_lot"),
-			not(feature = "std"),
-			not(feature = "async")
-		)
+		all(not(feature = "pl"), not(feature = "std"), not(feature = "async"))
 	)))
 )]
 #[cfg(any(
 	feature = "std",
-	all(
-		not(feature = "parking_lot"),
-		not(feature = "std"),
-		not(feature = "async")
-	)
+	all(not(feature = "pl"), not(feature = "std"), not(feature = "async"))
 ))]
 pub mod std;
 
-#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-#[cfg(feature = "parking_lot")]
+#[cfg_attr(docsrs, doc(cfg(feature = "pl")))]
+#[cfg(feature = "pl")]
 pub mod pl;
 
 #[cfg_attr(docsrs, doc(cfg(feature = "async")))]

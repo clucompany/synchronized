@@ -16,30 +16,22 @@ cfg_async_or_sync! {
 		/// the current library is asynchronous.
 		#only_async {
 			/// Create a new hold lock.
-			async fn new_lock(&self) -> Self::LockType<'_>;
-
-			/// If the lock exists and is not released, then return None,
-			/// if there is no lock, then create it and return Some.
-			async fn try_lock(&self) -> Option<Self::LockType<'_>>;
-
-			/// Destroy the blocking structure and remove
-			/// the lock (usually always involves just a drop)
-			async fn unlock(&self, lock_type: Self::LockType<'_>);
+			fn new_lock(&self) -> impl core::future::Future<Output = Self::LockType<'_>> + Send;
 		}
 		/// This section of code is connected only if
 		/// the current library is synchronous.
 		#only_sync {
 			/// Create a new hold lock.
 			fn new_lock(&self) -> Self::LockType<'_>;
-
-			/// If the lock exists and is not released, then return None,
-			/// if there is no lock, then create it and return Some.
-			fn try_lock(&self) -> Option<Self::LockType<'_>>;
-
-			/// Destroy the blocking structure and remove
-			/// the lock (usually always involves just a drop)
-			fn unlock(&self, lock_type: Self::LockType<'_>);
 		}
+
+		/// If the lock exists and is not released, then return None,
+		/// if there is no lock, then create it and return Some.
+		fn try_lock(&self) -> Option<Self::LockType<'_>>;
+
+		/// Destroy the blocking structure and remove
+		/// the lock (usually always involves just a drop)
+		fn unlock(&self, lock_type: Self::LockType<'_>);
 
 		/// The actual structure that holds the synchronization
 		/// and provides access to the data.
@@ -49,9 +41,9 @@ cfg_async_or_sync! {
 		type DerefLockType;
 
 		/// Whether the current lock is active
-		#[cfg_attr(docsrs, doc(cfg( feature = "parking_lot" )))]
+		#[cfg_attr(docsrs, doc(cfg( feature = "pl" )))]
 		#[cfg( all(
-			feature = "parking_lot",
+			feature = "pl",
 
 			not(feature = "std"),
 			not(feature = "async")
@@ -84,48 +76,34 @@ where
 		pub fn new_lock(&self) -> T::LockType<'_> {
 			T::new_lock(&self.mutex_builder)
 		}
-
-		/// If the lock exists and is not released, then return None,
-		/// if there is no lock, then create it and return Some.
-		#[inline]
-		pub fn try_lock(&self) -> Option<T::LockType<'_>> {
-			T::try_lock(&self.mutex_builder)
-		}
-
-		/// Destroy the blocking structure and remove the lock
-		/// (usually always involves just a drop).
-		#[inline]
-		pub fn unlock<'a>(&'a self, lock: T::LockType<'a>) {
-			T::unlock(&self.mutex_builder, lock)
-		}
 	}
 
 	cfg_async! {
 		/// Create a new hold lock.
 		#[inline]
-		pub async fn new_lock<'a>(&'a self) -> T::LockType<'a> {
+		pub async fn new_lock(&self) -> T::LockType<'_> {
 			T::new_lock(&self.mutex_builder).await
 		}
+	}
 
-		/// If the lock exists and is not released, then return None,
-		/// if there is no lock, then create it and return Some.
-		#[inline]
-		pub async fn try_lock<'a>(&'a self) -> Option<T::LockType<'a>> {
-			T::try_lock(&self.mutex_builder).await
-		}
+	/// If the lock exists and is not released, then return None,
+	/// if there is no lock, then create it and return Some.
+	#[inline]
+	pub fn try_lock(&self) -> Option<T::LockType<'_>> {
+		T::try_lock(&self.mutex_builder)
+	}
 
-		/// Destroy the blocking structure and remove the lock
-		/// (usually always involves just a drop).
-		#[inline]
-		pub async fn unlock<'a>(&'a self, lock: T::LockType<'a>) {
-			T::unlock(&self.mutex_builder, lock).await
-		}
+	/// Destroy the blocking structure and remove the lock
+	/// (usually always involves just a drop).
+	#[inline]
+	pub fn unlock(&self, lock: T::LockType<'_>) {
+		T::unlock(&self.mutex_builder, lock)
 	}
 
 	/// Whether the current lock is active
 	#[inline]
-	#[cfg_attr(docsrs, doc(cfg(feature = "parking_lot")))]
-	#[cfg(all(feature = "parking_lot", not(feature = "std"), not(feature = "async")))]
+	#[cfg_attr(docsrs, doc(cfg(feature = "pl")))]
+	#[cfg(all(feature = "pl", not(feature = "std"), not(feature = "async")))]
 	pub fn is_lock(&self) -> bool {
 		T::is_lock(&self.mutex_builder)
 	}

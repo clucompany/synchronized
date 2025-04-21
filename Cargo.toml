@@ -23,6 +23,10 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["std", "point"]
 # Adds or removes support for the `sync_point` macro.
 point = []
+
+# Alternative to `std` flag but only uses synchronization primitives from `parking_lot`
+pl = ["parking_lot"]
+
 # Use synchronization primitives from `std`. Note that is_lock is not supported in it.
 #
 # Note that you can just use `parking_lot` instead of `std`.
