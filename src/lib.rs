@@ -17,33 +17,11 @@
 
 /*!
 
-Convenient and simple macro for code synchronization in multithreading.
+Simple and convenient macro for synchronizing code in multithreading.
 
-# Use
+# Usage
 
-### 1. easy/sync
-
-```rust
-use synchronized::sync;
-
-/*
-	Quick implementation examples of blocking anonymous code.
-*/
-
-fn main() {
-	// #1 Anonymous inter-threaded synchronized code,
-	// in the case of multi-threading, one thread will wait for the completion of another.
-	sync! {
-		println!("1");
-	}
-
-	// #2 Anonymous inter-threaded synchronized code,
-	// in the case of multi-threading, one thread will wait for the completion of another.
-	sync!( println!("1"); );
-}
-```
-
-### 2. sync_static
+### 1. sync_static
 
 ```rust
 use std::thread::spawn;
@@ -102,70 +80,8 @@ fn sync_fn() -> usize {
 }
 ```
 
-### 3. sync_let
 
-```rust
-use std::thread::spawn;
-use synchronized::sync;
-
-/*
-	An example that describes how to quickly create an anonymous
-	sync with a mutable variable.
-
-	This code creates 5 threads, each of which tries to update
-	the `sync_let` variable with data while executing the synchronized anonymous code.
-*/
-
-fn main() {
-	// An array of handles to wait for all threads to complete.
-	let mut join_all = Vec::new();
-
-	// Creation of 5 threads to implement a multi-threaded environment.
-	for thread_id in 0..5 {
-		let join = spawn(move || {
-			// Create anonymous synchronized code with one mutable variable `sync_let` and `count`.
-			let result = sync!(
-				(sync_let: String = String::new(), count: usize = 0) {
-					// If it's the first thread,
-					// then theoretically `sync_let` is String::new().
-					if thread_id == 0 {
-						assert_eq!(sync_let.is_empty(), true);
-						assert_eq!(count, &0);
-					}
-
-					// We fill the variable `sync_let` and `count` with data.
-					sync_let.push_str(&thread_id.to_string());
-					sync_let.push_str(" ");
-
-					*count += 1;
-
-					sync_let.clone()
-				}
-			);
-
-			// Outputting debug information.
-			println!("#[id: {}] {}", thread_id, result);
-		});
-
-		// In order for our `assert_eq!(sync_let.is_empty());` code to
-		// always run correctly, the first thread should always run first
-		// (this is just for the stability of this example).
-		if thread_id == 0 {
-			let _e = join.join();
-			continue;
-		}
-
-		join_all.push(join);
-	}
-
-	// We just wait for all threads to finish and look at stdout.
-	for tjoin in join_all {
-		let _e = tjoin.join();
-	}
-}
-```
-
-### 4. point
+### 2. point
 
 ```rust
 /*
@@ -233,58 +149,108 @@ fn main() {
 }
 ```
 
-# Connection
+### 3. sync_let
 
-This section only describes how to choose the default synchronization method for a `synchronized` macro.
+```rust
+use std::thread::spawn;
+use synchronized::sync;
 
-### 1. PlugAndPlay (minimal, sync, std)
+/*
+	An example that describes how to quickly create an anonymous
+	sync with a mutable variable.
 
-For a `synchronized` macro, use the primitives implemented by the default `std` library.
+	This code creates 5 threads, each of which tries to update
+	the `sync_let` variable with data while executing the synchronized anonymous code.
+*/
+
+fn main() {
+	// An array of handles to wait for all threads to complete.
+	let mut join_all = Vec::new();
+
+	// Creation of 5 threads to implement a multi-threaded environment.
+	for thread_id in 0..5 {
+		let join = spawn(move || {
+			// Create anonymous synchronized code with one mutable variable `sync_let` and `count`.
+			let result = sync!(
+				(sync_let: String = String::new(), count: usize = 0) {
+					// If it's the first thread,
+					// then theoretically `sync_let` is String::new().
+					if thread_id == 0 {
+						assert_eq!(sync_let.is_empty(), true);
+						assert_eq!(count, &0);
+					}
+
+					// We fill the variable `sync_let` and `count` with data.
+					sync_let.push_str(&thread_id.to_string());
+					sync_let.push_str(" ");
+
+					*count += 1;
+
+					sync_let.clone()
+				}
+			);
+
+			// Outputting debug information.
+			println!("#[id: {}] {}", thread_id, result);
+		});
+
+		// In order for our `assert_eq!(sync_let.is_empty());` code to
+		// always run correctly, the first thread should always run first
+		// (this is just for the stability of this example).
+		if thread_id == 0 {
+			let _e = join.join();
+			continue;
+		}
+
+		join_all.push(join);
+	}
+
+	// We just wait for all threads to finish and look at stdout.
+	for tjoin in join_all {
+		let _e = tjoin.join();
+	}
+}
+```
+
+## Features
+
+Synchronized supports locks from the standard `std` package, as well as the `parking_lot` package, and also supports asynchronous operation using locks from `tokio`:
+
+### 1. `std` (only synchronization locks from the `std` library)
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"std",
-	#"point"
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
 
-### 2. PlugAndPlay (minimal, sync, parking_lot)
-
-For a `synchronized` macro, use the primitives implemented by the default `parking_lot` library.
+### 2. `parking_lot` (only synchronization locks from the `parking_lot` library)
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"pl",
-	#"point"
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
 
-### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_trait)
-
-For a `synchronized` macro, use the primitives implemented by the default `tokio` library.
+### 3. `tokio` (only async locks from `tokio` library)
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"async",
-	#"point"
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
-
-# Additionally inf
-
-1. The macro is an alternative to the `synchronized` keyword from the Java programming language for the Rust programming language with all sorts of extensions.
-
-2. This macro was created by an author who has not written in Java for a very long time, inspired by the memory of the Java programming language (versions 1.5-1.6).
-
 */
 
 #![allow(clippy::tabs_in_doc_comments)]
