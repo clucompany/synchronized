@@ -1,36 +1,52 @@
-# synchronized
-[![CI](https://github.com/clucompany/synchronized/actions/workflows/CI.yml/badge.svg?event=push)](https://github.com/clucompany/synchronized/actions/workflows/CI.yml)
-[![Apache licensed](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](./LICENSE)
-[![crates.io](https://img.shields.io/crates/v/synchronized)](https://crates.io/crates/synchronized)
-[![Documentation](https://docs.rs/synchronized/badge.svg)](https://docs.rs/synchronized)
+<div id="header" align="center">
 
-Convenient and simple macro for code synchronization in multithreading.
+  <b>[synchronized]</b>
+  
+  (Simple and convenient macro for synchronizing code in multithreading. )
+  </br></br>
 
-# Use
+<div id="badges">
+  <a href="./LICENSE_APACHE">
+    <img src="https://github.com/UlinProject/img/blob/main/short_32/apache2.png?raw=true" alt="apache2"/>
+  </a>
+  <a href="https://crates.io/crates/synchronized">
+    <img src="https://github.com/UlinProject/img/blob/main/short_32/cratesio.png?raw=true" alt="cratesio"/>
+  </a>
+  <a href="https://docs.rs/synchronized">
+    <img src="https://github.com/UlinProject/img/blob/main/short_32/docrs.png?raw=true" alt="docrs"/>
+  </a>
+  <a href="https://github.com/denisandroid">
+    <img src="https://github.com/UlinProject/img/blob/main/short_32/uproject.png?raw=true" alt="uproject"/>
+  </a>
+  <a href="https://github.com/clucompany">
+    <img src="https://github.com/UlinProject/img/blob/main/short_32/clulab.png?raw=true" alt="clulab"/>
+  </a>
+	
+  [![CI](https://github.com/clucompany/synchronized/actions/workflows/CI.yml/badge.svg?event=push)](https://github.com/clucompany/synchronized/actions/workflows/CI.yml) 
 
-### 1. easy/sync
+
+</div>
+</div>
+
+
+## Usage
+
+Add this to your Cargo.toml:
+
+```toml
+[dependencies]
+synchronized = "1.1.0"
+```
+
+and this to your source code:
 
 ```rust
 use synchronized::sync;
-
-/*
-	Quick implementation examples of blocking anonymous code.
-*/
-
-fn main() {
-	// #1 Anonymous inter-threaded synchronized code, 
-	// in the case of multi-threading, one thread will wait for the completion of another.
-	sync! {
-		println!("1");
-	}
-	
-	// #2 Anonymous inter-threaded synchronized code, 
-	// in the case of multi-threading, one thread will wait for the completion of another.
-	sync!( println!("1"); );
-}
 ```
 
-### 2. sync_static
+## Example
+
+### 1. sync_static
 
 ```rust
 use std::thread::spawn;
@@ -86,6 +102,68 @@ fn sync_fn() -> usize {
 	};
 	
 	result
+}
+```
+
+### 2. point
+
+```rust
+/*
+	An example implementation of synchronized code with 
+	one non-anonymous synchronization point.
+	
+	This example creates a set of anonymous sync codes associated with a 
+	single named sync point. Each synchronization code executes in the same 
+	way as ordinary anonymous code, but execution occurs simultaneously in a 
+	multi-threaded environment in only one of them.
+	
+	!!! In this example, the assembly requires the `point` feature to be active.
+*/
+
+use synchronized::sync_point;
+use synchronized::sync;
+
+fn main() {
+	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
+	sync_point! {(COMB_SYNC) {
+		static mut POINT: usize = 0;
+		println!("GeneralSyncPoint, name_point: {}", COMB_SYNC.get_sync_point_name());
+		
+		// #1 Anonymous synchronized code that operates on a 
+		// single named synchronization point.
+		//
+		// This code is not executed concurrently in a multi-threaded environment, 
+		// one thread is waiting for someone else's code to execute in this part of the code.
+		let result0 = sync! ((->COMB_SYNC) {
+			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
+			unsafe {
+				POINT += 1;
+				
+				POINT
+			}
+		});
+		
+		// This line of code is not synchronized and can run concurrently on all threads.
+		println!("Unsynchronized code");
+		
+		// #2 Anonymous synchronized code that operates on a 
+		// single named synchronization point.
+		//
+		// Note that `result0` and `result1` cannot be calculated at the same time, 
+		// this does not happen because `result0` or `result1` are calculated in 
+		// synchronized code with a single sync point of the same name.
+		let result1 = sync! ((->COMB_SYNC) {
+			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
+			unsafe {
+				POINT += 1;
+				
+				POINT
+			}
+		});
+		
+		// Display debug information.
+		println!("result, res0: {:?}, res1: {:?}", result0, result1);
+	}}
 }
 ```
 
@@ -152,89 +230,28 @@ fn main() {
 }
 ```
 
-### 4. point
+<a href="./examples">
+  See all
+</a>
 
-```rust
-/*
-	An example implementation of synchronized code with 
-	one non-anonymous synchronization point.
-	
-	This example creates a set of anonymous sync codes associated with a 
-	single named sync point. Each synchronization code executes in the same 
-	way as ordinary anonymous code, but execution occurs simultaneously in a 
-	multi-threaded environment in only one of them.
-	
-	!!! In this example, the assembly requires the `point` feature to be active.
-*/
 
-use synchronized::sync_point;
-use synchronized::sync;
+# Features
 
-fn main() {
-	// A sync point named `COMB_SYNC` to group anonymous code syncs by name.
-	sync_point! {(COMB_SYNC) {
-		static mut POINT: usize = 0;
-		println!("GeneralSyncPoint, name_point: {}", COMB_SYNC.get_sync_point_name());
-		
-		// #1 Anonymous synchronized code that operates on a 
-		// single named synchronization point.
-		//
-		// This code is not executed concurrently in a multi-threaded environment, 
-		// one thread is waiting for someone else's code to execute in this part of the code.
-		let result0 = sync! ((->COMB_SYNC) {
-			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
-			unsafe {
-				POINT += 1;
-				
-				POINT
-			}
-		});
-		
-		// This line of code is not synchronized and can run concurrently on all threads.
-		println!("Unsynchronized code");
-		
-		// #2 Anonymous synchronized code that operates on a 
-		// single named synchronization point.
-		//
-		// Note that `result0` and `result1` cannot be calculated at the same time, 
-		// this does not happen because `result0` or `result1` are calculated in 
-		// synchronized code with a single sync point of the same name.
-		let result1 = sync! ((->COMB_SYNC) {
-			println!("SyncCode, name_point: {}", COMB_SYNC.get_sync_point_name());
-			unsafe {
-				POINT += 1;
-				
-				POINT
-			}
-		});
-		
-		// Display debug information.
-		println!("result, res0: {:?}, res1: {:?}", result0, result1);
-	}}
-}
-```
+Synchronized supports locks from the standard `std` package, as well as the `parking_lot` package, and also supports asynchronous operation using locks from `tokio`:
 
-# Connection
-
-This section only describes how to choose the default synchronization method for a `synchronized` macro.
-
-### 1. PlugAndPlay (minimal, sync, std)
-
-For a `synchronized` macro, use the primitives implemented by the default `std` library.
+### 1. `std` (only synchronization locks from the `std` library)
 
 ```rust,ignore
 [dependencies.synchronized]
-version = "1.0.4"
+version = "1.1.0"
 default-features = false
 features = [
 	"std",
-	#"point",
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
 
-### 2. PlugAndPlay (minimal, sync, parking_lot)
-
-For a `synchronized` macro, use the primitives implemented by the default `parking_lot` library.
+### 2. `parking_lot` (only synchronization locks from the `parking_lot` library)
 
 ```rust,ignore
 [dependencies.synchronized]
@@ -242,13 +259,11 @@ version = "1.1.0"
 default-features = false
 features = [
 	"pl",
-	#"point",
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
 
-### 3. PlugAndPlay (minimal, async, tokio+parking_lot+async_trait)
-
-For a `synchronized` macro, use the primitives implemented by the default `tokio` library.
+### 3. `tokio` (only async locks from `tokio` library)
 
 ```rust,ignore
 [dependencies.synchronized]
@@ -256,18 +271,31 @@ version = "1.1.0"
 default-features = false
 features = [
 	"async",
-	#"point",
+	#"point", # Allows the use of synchronization points to avoid executing code in two or more places at the same time.
 ]
 ```
 
-# Additionally inf
+## License
 
-1. The macro is an alternative to the `synchronized` keyword from the Java programming language for the Rust programming language with all sorts of extensions.
+This project is distributed under the license (LICENSE-APACHE-2-0).
 
-2. This macro was created by an author who has not written in Java for a very long time, inspired by the memory of the Java programming language (versions 1.5-1.6).
+<div align="left">
+  <a href="https://github.com/denisandroid">
+    <img align="left" src="https://github.com/UlinProject/img/blob/main/block_220_100/uproject.png?raw=true" alt="uproject"/>
+  </a>
+  <b>&nbsp;Copyright (c) 2022-2025 #UlinProject</b>
+	
+  <b>&nbsp;(Denis Kotlyarov).</b>
+  </br></br></br>
+</div>
 
-# License
+### Apache License
 
-Copyright 2022-2025 #UlinProject Denis Kotlyarov (Денис Котляров)
-
-Licensed under the Apache License, Version 2.0
+<div align="left">
+  <a href="./LICENSE_APACHE">
+    <img align="left" src="https://github.com/UlinProject/img/blob/main/block_220_100/apache2.png?raw=true" alt="apache2"/>
+    
+  </a>
+  <b>&nbsp;Licensed under the Apache License, Version 2.0.</b>
+  </br></br></br></br>
+</div>
