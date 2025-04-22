@@ -1,10 +1,9 @@
 [package]
 name = "synchronized"
-version = "1.0.4"
+version = "1.1.0"
 authors = ["Denis Kotlyarov (Денис Котляров) <denis2005991@gmail.com>"]
 repository = "https://github.com/clucompany/synchronized.git"
-edition = "2021"
-build = "build.rs"
+edition = "2024"
 
 license = "Apache-2.0"
 readme = "README.md"
@@ -21,11 +20,13 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-default = ["std", "point", "get_point_name"]
-# Ability to get the name of the synchronization point.
-get_point_name = []
-# Adds or removes support for the `synchronized_point` macro.
+default = ["std", "point"]
+# Adds or removes support for the `sync_point` macro.
 point = []
+
+# Alternative to `std` flag but only uses synchronization primitives from `parking_lot`
+pl = ["parking_lot"]
+
 # Use synchronization primitives from `std`. Note that is_lock is not supported in it.
 #
 # Note that you can just use `parking_lot` instead of `std`.
@@ -33,12 +34,11 @@ std = []
 
 # The synchronization primitive is implemented using the `tokio`+`parking_lot` 
 # library for an asynchronous environment.
-async = ["tokio", "async-trait"]
+async = ["tokio"]
 
 [dependencies]
 # The synchronization primitive is implemented using the `parking_lot` library.
-parking_lot =	{ version = "0.12.1", optional = true }
+parking_lot = { version = "0.12.3", optional = true }
 
 # The synchronization primitive is implemented using the `tokio`+`parking_lot` library.
-tokio = { version = "1.21.2", optional = true, default-features = false, features = ["parking_lot", "sync"]}
-async-trait =	{ version = "0.1.58", optional = true }
+tokio = { version = "1.44.2", optional = true, default-features = false, features = ["parking_lot", "sync"]}

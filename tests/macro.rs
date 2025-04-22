@@ -1,32 +1,27 @@
-
-#[cfg(all(
-	test,
-	
-	not(feature = "async")
-))]
+#[cfg(all(test, not(feature = "async")))]
 mod test_noasync {
-	use synchronized::synchronized;
-	
+	use synchronized::sync;
+
 	#[test]
 	fn test_synchronized() {
-		synchronized! {
+		sync! {
 			let a = 1 + 2;
-			
+
 			assert_eq!(a, 3);
 		}
-		
-		let result = synchronized! {
+
+		let result = sync! {
 			let a = 1 + 2;
-			
+
 			assert_eq!(a, 3);
-			
+
 			a
 		};
 		assert_eq!(result, 3);
-		
-		let result = synchronized!((test: String = String::new()) {
-			assert_eq!(test.is_empty(), true);
-			
+
+		let result = sync!((test: String = String::new()) {
+			assert!(test.is_empty());
+
 			*test = "test".to_string();
 			test.clone()
 		});
@@ -34,36 +29,26 @@ mod test_noasync {
 	}
 }
 
-#[cfg( all(
-	test,
-	
-	feature = "point", 
-	feature = "parking_lot",
-	not( feature = "std" ), 
-	not( feature = "async" )
-))]
+#[cfg(all(test, feature = "pl", feature = "point", not(feature = "async")))]
 mod test_noasync_onlypoints {
-	use synchronized::synchronized;
+	use synchronized::sync;
 
-	use synchronized::synchronized_point;
-	
+	use synchronized::sync_point;
+
 	#[test]
-	fn test_synchronized_point() {
-		synchronized_point! ((NAME_SYNC_POINT) {
-			synchronized!((NAME_SYNC_POINT) {
-				assert_eq!(NAME_SYNC_POINT.is_lock(), true);
-				
+	fn test_sync_point() {
+		sync_point! ((NAME_SYNC_POINT) {
+			sync!((NAME_SYNC_POINT) {
+				assert!(NAME_SYNC_POINT.is_lock());
 			});
-			
+
 			// unsync block
 			// ..
 			assert_eq!(NAME_SYNC_POINT.is_lock(), false);
-			
-			synchronized!((NAME_SYNC_POINT) {
-				assert_eq!(NAME_SYNC_POINT.is_lock(), true);
-				
+
+			sync!((NAME_SYNC_POINT) {
+				assert!(NAME_SYNC_POINT.is_lock());
 			});
 		});
 	}
 }
-

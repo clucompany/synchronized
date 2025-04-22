@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master
+      - dev
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+      - dev
 
 env:
   CARGO_TERM_COLOR: always
@@ -34,9 +38,9 @@ jobs:
       run: cargo test --no-default-features --lib --verbose
     - name: Run cargo alltest
       run: cargo test --all-features --verbose
-    - name: Std
-      run: cargo test --no-default-features --features std,point,get_point_name --lib --verbose --examples
+    - name: STD
+      run: cargo test --no-default-features --features std,point --lib --verbose --examples
     - name: PL
-      run: cargo test --no-default-features --features parking_lot,point,get_point_name --lib --verbose --examples
-    - name: ASYNC(TOKIO+PL)
-      run: cargo test --no-default-features --features async,point,get_point_name --lib --verbose --tests
+      run: cargo test --no-default-features --features pl,point --lib --verbose --examples
+    - name: ASYNC(TOKIO)
+      run: cargo test --no-default-features --features async,point --lib --verbose --tests

@@ -1,58 +1,43 @@
-
-//! Synchronization primitive for the `synchronized` 
+//! Synchronization primitive for the `synchronized`
 //! macro implemented by the `tokio`+`parking_lot` library.
 
 extern crate tokio;
 
+use crate::core::SyncPointBeh;
+use crate::core::r#async::cfg_async_or_sync;
 pub use tokio::sync::Mutex;
 pub use tokio::sync::MutexGuard;
-use crate::core::SyncPointBeh;
 
-
-async_or_sync_code! {
+cfg_async_or_sync! {
 	impl[T: Send] SyncPointBeh for Mutex<T> {
-		/// This section of code is connected only if 
+		/// This section of code is connected only if
 		/// the current library is asynchronous.
 		#only_async {
-			#[inline(always)]
-			async fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
-				Mutex::lock(self).await
-			}
-			
-			#[inline(always)]
-			async fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
-				match Mutex::try_lock(self) {
-					Ok(a) => Some(a),
-					_ => None,
-				}
-			}
-			
-			#[inline(always)]
-			async fn unlock<'a>(&'a self, lock_type: Self::LockType<'a>) {
-				drop(lock_type)
+			#[inline]
+			fn new_lock(&self) -> impl core::future::Future<Output = Self::LockType<'_>> + Send {
+				Mutex::lock(self)
 			}
 		}
-		/// This section of code is connected only if 
+		/// This section of code is connected only if
 		/// the current library is synchronous.
 		#only_sync {
-			#[inline(always)]
-			fn new_lock<'a>(&'a self) -> Self::LockType<'a> {
-				unimplemented!();
-			}
-			
-			#[inline(always)]
-			fn try_lock<'a>(&'a self) -> Option<Self::LockType<'a>> {
-				unimplemented!();
-			}
-			
-			#[inline(always)]
-			fn unlock<'a>(&'a self, _lock_type: Self::LockType<'a>) {
+			#[inline]
+			fn new_lock(&self) -> Self::LockType<'_> {
 				unimplemented!();
 			}
 		}
-	
 		type LockType<'a> = MutexGuard<'a, T> where T: 'a;
 		type DerefLockType = T;
+
+		#[inline]
+		fn try_lock(&self) -> Option<Self::LockType<'_>> {
+			Mutex::try_lock(self).ok()
+		}
+
+		#[inline]
+		fn unlock(&self, lock_type: Self::LockType<'_>) {
+			drop(lock_type)
+		}
 	}
 }
 
@@ -68,29 +53,27 @@ async_or_sync_code! {
 /// Deletes a newly created lock (#new_lock)
 /// 4. #name
 /// Definition of the current implementation
-/// 
-#[doc(hidden)]
-#[cfg( all(not(any( feature = "parking_lot", feature = "std" ))) )]
 #[macro_export]
-macro_rules! __synchronized_beh {
+#[doc(hidden)]
+#[cfg(not(any(feature = "pl", feature = "std")))]
+macro_rules! __sync_beh {
 	{
 		// Definition of the current implementation
 		#name
-	} => { "async(tokio+parking_lot+async_trait)" };
+	} => { "async(tokio+parking_lot)" };
 
 	{
-		// Defining a new synchronization point, usually implements static 
+		// Defining a new synchronization point, usually implements static
 		// variables used during synchronization.
 		#new_point<$t: ty : [$t_make:expr]>: $v_point_name:ident
 	} => {
-		$crate::__make_name!( #new_name<_HIDDEN_NAME>: stringify!($v_point_name) );
-		
+
 		/// Generated Synchronization Point
 		#[allow(dead_code)]
 		#[allow(non_upper_case_globals)]
+		#[allow(non_camel_case_types)]
 		pub static $v_point_name: $crate::core::SyncPoint<
-			$crate::beh::r#async::Mutex<$t>, 
-			$crate::__make_name!( #get_name<_HIDDEN_NAME> )
+			$crate::beh::r#async::Mutex<$t>
 		> = $crate::core::SyncPoint::new($crate::beh::r#async::Mutex::const_new(
 			$t_make
 		));
@@ -106,6 +89,6 @@ macro_rules! __synchronized_beh {
 		// Deletes a newly created lock (#new_lock)
 		#drop_lock($lock: ident): $v_point_name:ident
 	} => {
-		$crate::core::SyncPoint::unlock(&$v_point_name, $lock).await;
+		$crate::core::SyncPoint::unlock(&$v_point_name, $lock);
 	};
 }
