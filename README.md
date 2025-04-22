@@ -23,6 +23,9 @@
   </a>
 	
   [![CI](https://github.com/clucompany/synchronized/actions/workflows/CI.yml/badge.svg?event=push)](https://github.com/clucompany/synchronized/actions/workflows/CI.yml) 
+  <a href="https://crates.io/crates/synchronized">
+    <img src="https://img.shields.io/crates/d/synchronized?logo=rust" alt="cratesio"/>
+  </a>
 
 
 </div>
