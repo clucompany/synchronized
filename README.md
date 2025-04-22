@@ -235,7 +235,7 @@ fn main() {
 </a>
 
 
-# Features
+## Features
 
 Synchronized supports locks from the standard `std` package, as well as the `parking_lot` package, and also supports asynchronous operation using locks from `tokio`:
 
